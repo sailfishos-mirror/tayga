@@ -1,0 +1,9 @@
+# Defaults for tayga initscript
+# sourced by /etc/init.d/tayga
+# installed at /etc/default/tayga by the maintainer scripts
+
+# Change this to "yes" to enable tayga
+RUN="no"
+
+# Additional options that are passed to the Daemon.
+DAEMON_OPTS=""

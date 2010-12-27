@@ -1,0 +1,20 @@
+Source: tayga
+Section: net
+Priority: optional
+Maintainer: Andrew O. Shadoura <bugzilla@tut.by>
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev, autoconf, automake
+Standards-Version: 3.9.1
+Vcs-Hg: http://hg.debian.org/hg/collab-maint/tayga/
+Vcs-Browser: http://hg.debian.org/hg/collab-maint/tayga/
+Homepage: http://www.litech.org/tayga/
+
+Package: tayga
+Architecture: any
+Depends: ${misc:Depends}
+Description: userspace stateless NAT64
+ TAYGA is an out-of-kernel stateless NAT64 implementation for Linux
+ that uses the TUN driver to exchange IPv4 and IPv6 packets with
+ the kernel. It is intended to provide production-quality NAT64
+ service for networks where dedicated NAT64 hardware would be
+ overkill. TAYGA needs no kernel patches or out-of-tree
+ modules, and it is compatible with all 2.4 and 2.6 kernels.
