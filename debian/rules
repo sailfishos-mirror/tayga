@@ -2,3 +2,7 @@
 %:
 	dh --with-autotools-dev $@
 
+override_dh_auto_install:
+	make install DESTDIR=$(CURDIR)/debian/tayga
+	mv $(CURDIR)/debian/tayga/etc/tayga.conf.example $(CURDIR)/debian/tayga/etc/tayga.conf
+
