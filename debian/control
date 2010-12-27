@@ -9,7 +9,7 @@ Vcs-Browser: http://hg.debian.org/hg/collab-maint/tayga/
 Homepage: http://www.litech.org/tayga/
 
 Package: tayga
-Architecture: any
+Architecture: linux-any
 Depends: ${misc:Depends}
 Description: userspace stateless NAT64
  TAYGA is an out-of-kernel stateless NAT64 implementation for Linux
