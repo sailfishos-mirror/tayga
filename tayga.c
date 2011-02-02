@@ -25,13 +25,14 @@
 
 #define USAGE_TEXT	\
 "Usage: %s [-c|--config CONFIGFILE] [-d] [-n|--nodetach] [-u|--user USERID]\n" \
-"             [-g|--group GROUPID] [-r|--chroot]\n\n" \
+"             [-g|--group GROUPID] [-r|--chroot] [-p|--pidfile PIDFILE]\n\n" \
 "--config FILE      : Read configuration options from FILE\n" \
 "-d                 : Enable debug messages (implies --nodetach)\n" \
 "--nodetach         : Do not detach from terminal\n" \
 "--user USERID      : Set uid to USERID after initialization\n" \
 "--group GROUPID    : Set gid to GROUPID after initialization\n" \
-"--chroot           : chroot() to data-dir (specified in config file)\n\n"
+"--chroot           : chroot() to data-dir (specified in config file)\n\n" \
+"--pidfile FILE     : Write process ID of daemon to FILE\n"
 
 extern struct config *gcfg;
 time_t now;
@@ -254,6 +255,7 @@ static void read_from_signalfd(void)
 int main(int argc, char **argv)
 {
 	int c, ret, longind;
+	int pidfd;
 	struct pollfd pollfds[2];
 	struct map6 *m6;
 	char addrbuf[INET6_ADDRSTRLEN];
@@ -261,6 +263,7 @@ int main(int argc, char **argv)
 	char *conffile = TAYGA_CONF_PATH;
 	char *user = NULL;
 	char *group = NULL;
+	char *pidfile = NULL;
 	int do_chroot = 0;
 	int detach = 1;
 	int do_mktun = 0;
@@ -277,11 +280,12 @@ int main(int argc, char **argv)
 		{ "user", 1, 0, 'u' },
 		{ "group", 1, 0, 'g' },
 		{ "chroot", 0, 0, 'r' },
+		{ "pidfile", 1, 0, 'p' },
 		{ 0, 0, 0, 0 }
 	};
 
 	for (;;) {
-		c = getopt_long(argc, argv, "c:dnu:g:r", longopts, &longind);
+		c = getopt_long(argc, argv, "c:dnu:g:rp:", longopts, &longind);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -323,6 +327,9 @@ int main(int argc, char **argv)
 			break;
 		case 'r':
 			do_chroot = 1;
+			break;
+		case 'p':
+			pidfile = optarg;
 			break;
 		default:
 			fprintf(stderr, "Try `%s --help' for more "
@@ -410,10 +417,26 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	if (pidfile) {
+		pidfd = open(pidfile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		if (pidfd < 0) {
+			slog(LOG_CRIT, "Error, unable to open %s for "
+					"writing: %s\n", pidfile,
+					strerror(errno));
+			exit(1);
+		}
+	}
+
 	if (detach && daemon(1, 0) < 0) {
 		slog(LOG_CRIT, "Error, unable to fork and detach: %s\n",
 				strerror(errno));
 		exit(1);
+	}
+
+	if (pidfile) {
+		snprintf(addrbuf, sizeof(addrbuf), "%ld\n", (long)getpid());
+		write(pidfd, addrbuf, strlen(addrbuf));
+		close(pidfd);
 	}
 
 	slog(LOG_INFO, "starting TAYGA " VERSION "\n");
