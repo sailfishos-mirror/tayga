@@ -2,7 +2,7 @@ Source: tayga
 Section: net
 Priority: optional
 Maintainer: Andrew O. Shadoura <bugzilla@tut.by>
-Build-Depends: debhelper (>= 7.0.50~), autotools-dev, autoconf, automake
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev (>= 20100122.1), autoconf, automake
 Standards-Version: 3.9.1
 Vcs-Hg: http://hg.debian.org/hg/collab-maint/tayga/
 Vcs-Browser: http://hg.debian.org/hg/collab-maint/tayga/
