@@ -1,3 +1,10 @@
+tayga (0.9.1-2) unstable; urgency=low
+
+  * Fix a typo in /etc/default/tayga (Closes: #622178)
+  * Depend on the correct version of autotools-dev.
+
+ -- Andrew O. Shadoura <bugzilla@tut.by>  Sun, 10 Apr 2011 22:10:59 +0300
+
 tayga (0.9.1-1) unstable; urgency=low
 
   * Initial release (Closes: #608136)
