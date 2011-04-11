@@ -93,8 +93,8 @@ running() {
 }
 
 start_server() {
-	start-stop-daemon --start --quiet --pidfile $PIDFILE \
-		-b -m --exec $DAEMON -- $DAEMON_OPTS
+	start-stop-daemon --start --quiet \
+		-b --exec $DAEMON --  --pidfile $PIDFILE $DAEMON_OPTS
 }
 
 stop_server() {
