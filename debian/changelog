@@ -1,6 +1,7 @@
 tayga (0.9.2-1) unstable; urgency=low
 
-  * New upstream release
+  * New upstream release.
+  * Update Standards-Version to 3.9.2.
 
  -- Andrew O. Shadoura <bugzilla@tut.by>  Wed, 15 Jun 2011 15:08:29 +0300
 
