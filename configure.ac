@@ -1,4 +1,4 @@
-AC_INIT(tayga, 0.9.1)
+AC_INIT(tayga, 0.9.2)
 AC_CONFIG_SRCDIR(nat64.c)
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
 AC_CONFIG_HEADERS(config.h)

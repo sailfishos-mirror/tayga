@@ -317,6 +317,21 @@ static void config_data_dir(int ln, int arg_count, char **args)
 	strcpy(gcfg->data_dir, args[0]);
 }
 
+static void config_strict_fh(int ln, int arg_count, char **args)
+{
+	if (!strcasecmp(args[0], "true") || !strcasecmp(args[0], "on") ||
+			!strcasecmp(args[0], "1")) {
+		gcfg->lazy_frag_hdr = 0;
+	} else if (!strcasecmp(args[0], "false") ||
+			!strcasecmp(args[0], "off") ||
+			!strcasecmp(args[0], "0")) {
+		gcfg->lazy_frag_hdr = 1;
+	} else {
+		slog(LOG_CRIT, "Error: invalid value for strict-frag-hdr\n");
+		exit(1);
+	}
+}
+
 struct {
 	char *name;
 	void (*config_func)(int ln, int arg_count, char **args);
@@ -329,6 +344,7 @@ struct {
 	{ "map", config_map, 2 },
 	{ "dynamic-pool", config_dynamic_pool, 1 },
 	{ "data-dir", config_data_dir, 1 },
+	{ "strict-frag-hdr", config_strict_fh, 1 },
 	{ NULL, NULL, 0 }
 };
 
@@ -360,6 +376,8 @@ void read_config(char *conffile)
 	gcfg->hash_bits = 7;
 	gcfg->cache_size = 8192;
 	gcfg->allow_ident_gen = 1;
+	gcfg->ipv6_offlink_mtu = 1280;
+	gcfg->lazy_frag_hdr = 1;
 	INIT_LIST_HEAD(&gcfg->cache_pool);
 	INIT_LIST_HEAD(&gcfg->cache_active);
 

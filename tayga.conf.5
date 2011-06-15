@@ -1,4 +1,4 @@
-.TH TAYGA.CONF "5" "December 2010" "TAYGA 0.9.1" ""
+.TH TAYGA.CONF "5" "June 2011" "TAYGA 0.9.2" ""
 .SH NAME
 tayga.conf \- configuration file of the TAYGA stateless NAT64 daemon
 .SH DESCRIPTION
@@ -148,6 +148,37 @@ directive is optional, but without it, dynamic mappings will be lost when the
 TAYGA daemon is stopped.  Also, use of the
 .B \-\-chroot
 command-line option will not be possible.
+.TP
+.BI "strict-frag-hdr " on|off|true|false|1|0
+Flag to control whether TAYGA adds fragmentation headers to IPv6 packets that
+do not require fragmentation.  RFC 6145 stipulates that the fragmentation
+header SHOULD be added to all translated packets when the sender has not set
+the DF (Don't Fragment) flag, to indicate that the sender allows fragmentation
+and may not support path MTU discovery.  Unfortunately, some firewall
+implementations drop IPv6 packets that are fragmented into a single fragment,
+most notably Linux netfilter conntrack in kernels older than 2.6.34.
+.IP
+When
+.B strict-frag-hdr
+is set to 
+.B true, on,
+or
+.B 1,
+fragmentation headers will be added to all translated packets where the
+DF bit in the original packet is clear.  This is the RFC-complaint behavior.
+.IP
+When
+.B strict-frag-hdr
+is set to 
+.B false, off,
+or
+.B 0,
+fragmentation headers will be suppressed when the translated packet fits
+entirely within the IPv6 network MTU (1280 bytes).  This is the default
+behavior.
+.IP
+This setting does not affect packets that arrive at TAYGA already fragmented,
+or packets that must be fragmented to fit within the IPv6 network MTU.
 
 .SH "SEE ALSO"
 .BR tayga (8)

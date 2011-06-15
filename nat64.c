@@ -214,8 +214,14 @@ static void xlate_4to6_data(struct pkt *p)
 	} __attribute__ ((__packed__)) header;
 	struct cache_entry *src = NULL, *dest = NULL;
 	struct iovec iov[2];
-	uint16_t off;
+	int no_frag_hdr = 0;
+	uint16_t off = ntohs(p->ip4->flags_offset);
 	int frag_size;
+
+	frag_size = gcfg->ipv6_offlink_mtu;
+	if (frag_size > gcfg->mtu)
+		frag_size = gcfg->mtu;
+	frag_size -= sizeof(struct ip6);
 
 	if (map_ip4_to_ip6(&header.ip6.dest, &p->ip4->dest, &dest)) {
 		host_send_icmp4_error(3, 1, 0, p);
@@ -227,10 +233,26 @@ static void xlate_4to6_data(struct pkt *p)
 		return;
 	}
 
-	if ((p->ip4->flags_offset & htons(IP4_F_DF)) &&
-			gcfg->mtu - MTU_ADJ < p->header_len + p->data_len) {
-		host_send_icmp4_error(3, 4, gcfg->mtu - MTU_ADJ, p);
-		return;
+	/* We do not respect the DF flag for IP4 packets that are already
+	   fragmented, because the IP6 fragmentation header takes an extra
+	   eight bytes, which we don't have space for because the IP4 source
+	   thinks the MTU is only 20 bytes smaller than the actual MTU on
+	   the IP6 side.  (E.g. if the IP6 MTU is 1496, the IP4 source thinks
+	   the path MTU is 1476, which means it sends fragments with 1456
+	   bytes of fragmented payload.  Translating this to IP6 requires
+	   40 bytes of IP6 header + 8 bytes of fragmentation header +
+	   1456 bytes of payload == 1504 bytes.) */
+	if ((off & (IP4_F_MASK | IP4_F_MF)) == 0) {
+		if (off & IP4_F_DF) {
+			if (gcfg->mtu - MTU_ADJ < p->header_len + p->data_len) {
+				host_send_icmp4_error(3, 4,
+						gcfg->mtu - MTU_ADJ, p);
+				return;
+			}
+			no_frag_hdr = 1;
+		} else if (gcfg->lazy_frag_hdr && p->data_len <= frag_size) {
+			no_frag_hdr = 1;
+		}
 	}
 
 	xlate_header_4to6(p, &header.ip6, p->data_len);
@@ -247,16 +269,7 @@ static void xlate_4to6_data(struct pkt *p)
 	header.pi.flags = 0;
 	header.pi.proto = htons(ETH_P_IPV6);
 
-	/* We do not respect the DF flag for IP4 packets that are already
-	   fragmented, because the IP6 fragmentation header takes an extra
-	   eight bytes, which we don't have space for because the IP4 source
-	   thinks the MTU is only 20 bytes smaller than the actual MTU on
-	   the IP6 side.  (E.g. if the IP6 MTU is 1496, the IP4 source thinks
-	   the path MTU is 1476, which means it sends fragments with 1456
-	   bytes of fragmented payload.  Translating this to IP6 requires
-	   40 bytes of IP header + 8 bytes of fragmentation header + 1456
-	   == 1504 bytes.) */
-	if (p->ip4->flags_offset == htons(IP4_F_DF)) {
+	if (no_frag_hdr) {
 		iov[0].iov_base = &header;
 		iov[0].iov_len = sizeof(struct tun_pi) + sizeof(struct ip6);
 		iov[1].iov_base = p->data;
@@ -275,12 +288,8 @@ static void xlate_4to6_data(struct pkt *p)
 		iov[0].iov_base = &header;
 		iov[0].iov_len = sizeof(header);
 
-		off = (ntohs(p->ip4->flags_offset) & IP4_F_MASK) * 8;
-
-		if (p->ip4->flags_offset & htons(IP4_F_DF))
-			frag_size = p->data_len;
-		else
-			frag_size = 1232;
+		off = (off & IP4_F_MASK) * 8;
+		frag_size = (frag_size - sizeof(header.ip6_frag)) & ~7;
 
 		while (p->data_len > 0) {
 			if (p->data_len < frag_size)
@@ -351,6 +360,21 @@ static int parse_ip4(struct pkt *p)
 	}
 
 	return 0;
+}
+
+/* Estimates the most likely MTU of the link that the datagram in question was
+ * too large to fit through, using the algorithm from RFC 1191. */
+static unsigned int est_mtu(unsigned int too_big)
+{
+	static const unsigned int table[] = {
+		65535, 32000, 17914, 8166, 4352, 2002, 1492, 1006, 508, 296, 0
+	};
+	int i;
+
+	for (i = 0; table[i]; ++i)
+		if (too_big > table[i])
+			return table[i];
+	return 68;
 }
 
 static void xlate_4to6_icmp_error(struct pkt *p)
@@ -427,11 +451,8 @@ static void xlate_4to6_icmp_error(struct pkt *p)
 			header.icmp.type = 2;
 			header.icmp.code = 0;
 			mtu = ntohl(p->icmp->word) & 0xffff;
-			if (mtu < 68) {
-				slog(LOG_INFO, "no MTU in Fragmentation "
-						"Needed message\n");
-				return;
-			}
+			if (mtu < 68)
+				mtu = est_mtu(ntohs(p_em.ip4->length));
 			mtu += MTU_ADJ;
 			if (mtu > gcfg->mtu)
 				mtu = gcfg->mtu;
@@ -849,9 +870,9 @@ static void xlate_6to4_icmp_error(struct pkt *p)
 			slog(LOG_INFO, "no mtu in Packet Too Big message\n");
 			return;
 		}
-		mtu -= MTU_ADJ;
 		if (mtu > gcfg->mtu)
 			mtu = gcfg->mtu;
+		mtu -= MTU_ADJ;
 		header.icmp.word = htonl(mtu);
 		allow_fake_source = 1;
 		break;
