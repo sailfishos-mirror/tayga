@@ -1,7 +1,7 @@
 Source: tayga
 Section: net
 Priority: optional
-Maintainer: Andrew O. Shadoura <bugzilla@tut.by>
+Maintainer: Andrew O. Shadura <bugzilla@tut.by>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev (>= 20100122.1), autoconf, automake
 Standards-Version: 3.9.2
 Vcs-Hg: http://hg.debian.org/hg/collab-maint/tayga/

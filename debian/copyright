@@ -1,6 +1,6 @@
 This package was debianized by:
 
-    Andrew O. Shadoura <bugzilla@tut.by> on Mon, 27 Dec 2010 18:05:20 +0200
+    Andrew O. Shadura <bugzilla@tut.by> on Mon, 27 Dec 2010 18:05:20 +0200
 
 It was downloaded from:
 
@@ -34,7 +34,7 @@ Public License version 2 can be found in `/usr/share/common-licenses/GPL-2'.
 
 The Debian packaging is:
 
-    Copyright (C) 2010 Andrew O. Shadoura <bugzilla@tut.by>
+    Copyright (C) 2010 Andrew O. Shadura <bugzilla@tut.by>
 
 and is licensed under the GPL version 2, see above.
 

@@ -1,5 +1,5 @@
 Description: use /var/spool/tayga instead of /var/db/tayga
-Author: Andrew O. Shadoura <bugzilla@tut.by>
+Author: Andrew O. Shadura <bugzilla@tut.by>
 
 --- a/tayga.conf.example
 +++ b/tayga.conf.example

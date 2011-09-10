@@ -1,5 +1,5 @@
 Description: don't use hyphen as minus sign
-Author: Andrew O. Shadoura <bugzilla@tut.by>
+Author: Andrew O. Shadura <bugzilla@tut.by>
 
 --- a/tayga.8
 +++ b/tayga.8
