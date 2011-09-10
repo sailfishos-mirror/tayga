@@ -59,6 +59,12 @@ STARTTIME=2             # Time to wait for the server to start, in seconds
                         # be a false positive (says it did not start
                         # when it actually did)
 
+TUN_DEVICE=$(sed -rn "/^[ \t]*tun-device/s/^[ \t]*tun-device[ \t]+//p" /etc/tayga.conf)
+IPV6_PREFIX=$(sed -rn "/^[ \t]*prefix/s/^[ \t]*prefix[ \t]+//p" /etc/tayga.conf)
+DYNAMIC_POOL=$(sed -rn "/^[ \t]*dynamic-pool/s/^[ \t]*dynamic-pool[ \t]+//p" /etc/tayga.conf)
+CONFIGURE_IFACE="no"
+CONFIGURE_NAT44="no"
+
 # Include defaults if available
 if [ -f /etc/default/$NAME ] ; then
     . /etc/default/$NAME
@@ -93,6 +99,14 @@ running() {
 }
 
 start_server() {
+    if [ "x$CONFIGURE_IFACE" = "xyes" ] ; then
+		$DAEMON --mktun
+		ip link set $TUN_DEVICE up
+		ip route add $DYNAMIC_POOL dev nat64
+		ip route add $IPV6_PREFIX dev nat64
+    fi
+    [ "x$CONFIGURE_NAT44" = "xyes" ] && iptables -t nat -A POSTROUTING -s $DYNAMIC_POOL -j MASQUERADE || true
+
 	start-stop-daemon --start --quiet \
 		-b --exec $DAEMON --  --pidfile $PIDFILE $DAEMON_OPTS
 }
@@ -100,6 +114,11 @@ start_server() {
 stop_server() {
 	start-stop-daemon --stop --quiet --pidfile $PIDFILE
 	errcode=$?
+    if [ "x$CONFIGURE_IFACE" = "xyes" ] ; then
+		ip link set $TUN_DEVICE down
+		$DAEMON --rmtun
+	fi
+    [ "x$CONFIGURE_NAT44" = "xyes" ] && iptables -t nat -D POSTROUTING -s $DYNAMIC_POOL -j MASQUERADE || true
 	if $errorcode ; then
 		rm $PIDFILE
 	fi

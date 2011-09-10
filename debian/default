@@ -5,5 +5,11 @@
 # Change this to "yes" to enable tayga
 RUN="no"
 
+# Configure interface and set the routes up
+CONFIGURE_IFACE="yes"
+
+# Configure NAT44 for the private IPv4 range
+CONFIGURE_NAT44="yes"
+
 # Additional options that are passed to the Daemon.
 DAEMON_OPTS=""
