@@ -1,3 +1,11 @@
+tayga (0.9.2-3) unstable; urgency=low
+
+  * Perform some additional configuration; users should check if that
+    doesn't break any of existing manual setups (Closes: #637889).
+  * Change the spelling of maintainer's name.
+
+ -- Andrew O. Shadura <bugzilla@tut.by>  Sat, 10 Sep 2011 13:03:36 +0300
+
 tayga (0.9.2-2) unstable; urgency=low
 
   * Update Standards-Version to 3.9.2.
