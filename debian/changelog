@@ -1,3 +1,9 @@
+tayga (0.9.2-4) unstable; urgency=low
+
+  * Fix a syntax error in the initscript.
+
+ -- Andrew O. Shadura <bugzilla@tut.by>  Tue, 17 Apr 2012 19:18:14 +0200
+
 tayga (0.9.2-3) unstable; urgency=low
 
   * Perform some additional configuration; users should check if that
