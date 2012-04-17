@@ -2,6 +2,7 @@ Source: tayga
 Section: net
 Priority: optional
 Maintainer: Andrew O. Shadura <bugzilla@tut.by>
+Uploaders: Barak A. Pearlmutter <bap@debian.org>
 Build-Depends: debhelper (>= 9), dh-autorerconf
 Standards-Version: 3.9.3
 Vcs-Hg: http://hg.debian.org/hg/collab-maint/tayga/
