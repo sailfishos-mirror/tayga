@@ -27,6 +27,11 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: userspace NAT64
+# Description: TAYGA is a stateless NAT64 userspace daemon.  Using the
+#		in-kernel TUN network driver, TAYGA receives IPv4 and
+#		IPv6 packets, translates them to the other protocol,
+#		and sends the translated packets back using the same
+#		TUN interface.
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
