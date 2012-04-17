@@ -1,8 +1,7 @@
 #!/usr/bin/make -f
 %:
-	dh --with=autotools-dev $@
+	dh $@ --parallel --with=autoreconf
 
 override_dh_auto_install:
-	make install DESTDIR=$(CURDIR)/debian/tayga
+	dh_auto_install
 	mv $(CURDIR)/debian/tayga/etc/tayga.conf.example $(CURDIR)/debian/tayga/etc/tayga.conf
-
