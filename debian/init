@@ -114,14 +114,12 @@ start_server() {
 stop_server() {
 	start-stop-daemon --stop --quiet --pidfile $PIDFILE
 	errcode=$?
-    if [ "x$CONFIGURE_IFACE" = "xyes" ] ; then
+	if [ "x$CONFIGURE_IFACE" = "xyes" ] ; then
 		ip link set $TUN_DEVICE down
 		$DAEMON --rmtun
 	fi
-    [ "x$CONFIGURE_NAT44" = "xyes" ] && iptables -t nat -D POSTROUTING -s $DYNAMIC_POOL -j MASQUERADE || true
-	if $errorcode ; then
-		rm $PIDFILE
-	fi
+	[ "x$CONFIGURE_NAT44" = "xyes" ] && iptables -t nat -D POSTROUTING -s $DYNAMIC_POOL -j MASQUERADE || true
+	rm -f $PIDFILE
 
 	return $errcode
 }
