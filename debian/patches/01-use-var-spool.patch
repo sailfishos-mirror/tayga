@@ -1,6 +1,12 @@
-Description: use /var/spool/tayga instead of /var/db/tayga
-Author: Andrew O. Shadura <bugzilla@tut.by>
+From: "Andrew O. Shadura" <bugzilla@tut.by>
+Subject: 01-use-var-spool
 
+use /var/spool/tayga instead of /var/db/tayga
+---
+ tayga.conf.example |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tayga.conf.example b/tayga.conf.example
 --- a/tayga.conf.example
 +++ b/tayga.conf.example
 @@ -84,7 +84,7 @@
