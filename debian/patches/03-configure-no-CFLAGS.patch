@@ -1,0 +1,22 @@
+From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
+Date: Wed, 18 Apr 2012 09:07:57 +0100
+Subject: 03 configure no-CFLAGS
+
+Allow CFLAGS to default in configure.ac instead of hardwiring to -g -O2
+---
+ configure.ac |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 3d2a6c9..5640305 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -5,8 +5,6 @@ AC_CONFIG_HEADERS(config.h)
+ 
+ AC_PROG_CC
+ 
+-CFLAGS='-g -Wall'
+-
+ tayga_conf_path=${sysconfdir}/tayga.conf
+ 
+ AC_SUBST(tayga_conf_path)

@@ -1,2 +1,6 @@
 01-use-var-spool.patch
 02-manpage.patch
+03-configure-no-CFLAGS.patch
+04-quote-make-var.patch
+05-guard-chdir.patch
+06-guard-write.patch
