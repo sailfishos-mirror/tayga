@@ -109,6 +109,8 @@ start_server() {
 		ip link set $TUN_DEVICE up
 		ip route add $DYNAMIC_POOL dev $TUN_DEVICE
 		ip route add $IPV6_PREFIX dev $TUN_DEVICE
+		[ -n "$IPV4_TUN_ADDR" ] && ip addr add $IPV4_TUN_ADDR dev $TUN_DEVICE
+		[ -n "$IPV6_TUN_ADDR" ] && ip addr add $IPV6_TUN_ADDR dev $TUN_DEVICE
     fi
     [ "x$CONFIGURE_NAT44" = "xyes" ] && iptables -t nat -A POSTROUTING -s $DYNAMIC_POOL -j MASQUERADE || true
 
