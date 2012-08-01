@@ -107,8 +107,8 @@ start_server() {
     if [ "x$CONFIGURE_IFACE" = "xyes" ] ; then
 		$DAEMON --mktun
 		ip link set $TUN_DEVICE up
-		ip route add $DYNAMIC_POOL dev $TUN_DEVICE
-		ip route add $IPV6_PREFIX dev $TUN_DEVICE
+		[ -n "$DYNAMIC_POOL" ] && ip route add $DYNAMIC_POOL dev $TUN_DEVICE
+		[ -n "$IPV6_PREFIX" ] && ip route add $IPV6_PREFIX dev $TUN_DEVICE
 		[ -n "$IPV4_TUN_ADDR" ] && ip addr add $IPV4_TUN_ADDR dev $TUN_DEVICE
 		[ -n "$IPV6_TUN_ADDR" ] && ip addr add $IPV6_TUN_ADDR dev $TUN_DEVICE
     fi
