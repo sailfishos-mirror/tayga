@@ -13,3 +13,9 @@ CONFIGURE_NAT44="yes"
 
 # Additional options that are passed to the Daemon.
 DAEMON_OPTS=""
+
+# IPv4 address to assign to the NAT64 tunnel device
+IPV4_TUN_ADDR=""
+
+# IPv6 address to assign to the NAT64 tunnel device
+IPV6_TUN_ADDR=""
