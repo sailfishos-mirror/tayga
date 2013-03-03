@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Andrew O. Shadura <bugzilla@tut.by>
 Uploaders: Barak A. Pearlmutter <bap@debian.org>
 Build-Depends: debhelper (>= 9), dh-autoreconf
-Standards-Version: 3.9.3
+Standards-Version: 3.9.4
 Vcs-Hg: http://hg.debian.org/hg/collab-maint/tayga/
 Vcs-Browser: http://hg.debian.org/hg/collab-maint/tayga/
 Homepage: http://www.litech.org/tayga/
