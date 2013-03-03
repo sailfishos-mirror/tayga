@@ -112,7 +112,7 @@ start_server() {
 		[ -n "$IPV4_TUN_ADDR" ] && ip addr add "$IPV4_TUN_ADDR" dev "$TUN_DEVICE"
 		[ -n "$IPV6_TUN_ADDR" ] && ip addr add "$IPV6_TUN_ADDR" dev "$TUN_DEVICE"
     fi
-    [ "$CONFIGURE_NAT44" = "yes" ] && iptables -t nat -A POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
+    [ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ] && iptables -t nat -A POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
 
 	start-stop-daemon --start --quiet \
 		-b --exec "$DAEMON" --  --pidfile "$PIDFILE" $DAEMON_OPTS
@@ -125,7 +125,7 @@ stop_server() {
 		ip link set "$TUN_DEVICE" down
 		"$DAEMON" --rmtun
 	fi
-	[ "$CONFIGURE_NAT44" = "yes" ] && iptables -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
+	[ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ] && iptables -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
 	rm -f "$PIDFILE"
 
 	return $errcode
