@@ -105,7 +105,7 @@ running() {
 
 start_server() {
     if [ "$CONFIGURE_IFACE" = "yes" ] ; then
-		"$DAEMON" --mktun
+		"$DAEMON" --mktun | logger -t "$NAME" -i
 		ip link set "$TUN_DEVICE" up
 		[ -n "$DYNAMIC_POOL" ] && ip route add "$DYNAMIC_POOL" dev "$TUN_DEVICE"
 		[ -n "$IPV6_PREFIX" ] && ip route add "$IPV6_PREFIX" dev "$TUN_DEVICE"
@@ -123,7 +123,7 @@ stop_server() {
 	errcode=$?
 	if [ "$CONFIGURE_IFACE" = "yes" ] ; then
 		ip link set "$TUN_DEVICE" down
-		"$DAEMON" --rmtun
+		"$DAEMON" --rmtun | logger -t "$NAME" -i
 	fi
 	[ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ] && iptables -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
 	rm -f "$PIDFILE"
