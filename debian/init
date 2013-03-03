@@ -104,7 +104,7 @@ running() {
 }
 
 start_server() {
-    if [ "x$CONFIGURE_IFACE" = "xyes" ] ; then
+    if [ "$CONFIGURE_IFACE" = "yes" ] ; then
 		$DAEMON --mktun
 		ip link set $TUN_DEVICE up
 		[ -n "$DYNAMIC_POOL" ] && ip route add $DYNAMIC_POOL dev $TUN_DEVICE
@@ -112,7 +112,7 @@ start_server() {
 		[ -n "$IPV4_TUN_ADDR" ] && ip addr add $IPV4_TUN_ADDR dev $TUN_DEVICE
 		[ -n "$IPV6_TUN_ADDR" ] && ip addr add $IPV6_TUN_ADDR dev $TUN_DEVICE
     fi
-    [ "x$CONFIGURE_NAT44" = "xyes" ] && iptables -t nat -A POSTROUTING -s $DYNAMIC_POOL -j MASQUERADE || true
+    [ "$CONFIGURE_NAT44" = "yes" ] && iptables -t nat -A POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
 
 	start-stop-daemon --start --quiet \
 		-b --exec $DAEMON --  --pidfile $PIDFILE $DAEMON_OPTS
@@ -121,12 +121,12 @@ start_server() {
 stop_server() {
 	start-stop-daemon --stop --quiet --pidfile $PIDFILE
 	errcode=$?
-	if [ "x$CONFIGURE_IFACE" = "xyes" ] ; then
 		ip link set $TUN_DEVICE down
 		$DAEMON --rmtun
+	if [ "$CONFIGURE_IFACE" = "yes" ] ; then
 	fi
-	[ "x$CONFIGURE_NAT44" = "xyes" ] && iptables -t nat -D POSTROUTING -s $DYNAMIC_POOL -j MASQUERADE || true
 	rm -f $PIDFILE
+	[ "$CONFIGURE_NAT44" = "yes" ] && iptables -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
 
 	return $errcode
 }
