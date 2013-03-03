@@ -1,3 +1,13 @@
+tayga (0.9.2-5) unstable; urgency=low
+
+  * Don't try to configure routes if options aren't set
+    (LP: #1031772, also closes: #673491, #700712).
+  * Bring more sanity to the init script.
+  * Redirect TUN creation and removal messages to the system log.
+  * Update Standards-Version to 3.9.4 (no changes required).
+
+ -- Andrew Shadura <bugzilla@tut.by>  Sun, 03 Mar 2013 11:32:42 +0100
+
 tayga (0.9.2-4) unstable; urgency=low
 
   [ Andrew O. Shadura ]
