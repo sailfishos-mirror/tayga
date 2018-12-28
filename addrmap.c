@@ -22,10 +22,6 @@ extern time_t now;
 
 int validate_ip4_addr(const struct in_addr *a)
 {
-	/* First octet == 0 */
-	if (!(a->s_addr & htonl(0xff000000)))
-		return -1;
-
 	/* First octet == 127 */
 	if ((a->s_addr & htonl(0xff000000)) == htonl(0x7f000000))
 		return -1;
@@ -97,7 +93,7 @@ int is_private_ip4_addr(const struct in_addr *a)
 
 int calc_ip4_mask(struct in_addr *mask, const struct in_addr *addr, int len)
 {
-	mask->s_addr = htonl(~((1 << (32 - len)) - 1));
+	mask->s_addr = htonl(~(0xffffffff >> len));
 	if (addr && (addr->s_addr & ~mask->s_addr))
 		return -1;
 	return 0;
@@ -422,6 +418,9 @@ int map_ip4_to_ip6(struct in6_addr *addr6, const struct in_addr *addr4,
 	case MAP_TYPE_STATIC:
 		s = container_of(map4, struct map_static, map4);
 		*addr6 = s->map6.addr;
+		if (map4->prefix_len < 32) {
+			addr6->s6_addr32[3] = s->map6.addr.s6_addr32[3] | (addr4->s_addr & ~map4->mask.s_addr);
+		}
 		break;
 	case MAP_TYPE_RFC6052:
 		s = container_of(map4, struct map_static, map4);
@@ -564,7 +563,13 @@ int map_ip6_to_ip4(struct in_addr *addr4, const struct in6_addr *addr6,
 	switch (map6->type) {
 	case MAP_TYPE_STATIC:
 		s = container_of(map6, struct map_static, map6);
-		*addr4 = s->map4.addr;
+		
+		if (map6->prefix_len < 128) {
+			addr4->s_addr = s->map4.addr.s_addr | (addr6->s6_addr32[3] & ~map6->mask.s6_addr32[3]);
+		} else {
+			*addr4 = s->map4.addr;
+		}
+
 		break;
 	case MAP_TYPE_RFC6052:
 		if (extract_from_prefix(addr4, addr6, map6->prefix_len) < 0)
@@ -629,3 +634,10 @@ void addrmap_maint(void)
 		}
 	}
 }
+
+/*
+Local Variables:
+c-basic-offset: 8
+indent-tabs-mode: t
+End:
+*/
