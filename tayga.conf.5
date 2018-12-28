@@ -1,4 +1,4 @@
-.TH TAYGA.CONF "5" "June 2011" "TAYGA 0.9.2" ""
+.TH TAYGA.CONF "5" "Dec 2018" "TAYGA 0.9.2" ""
 .SH NAME
 tayga.conf \- configuration file of the TAYGA stateless NAT64 daemon
 .SH DESCRIPTION
@@ -75,12 +75,21 @@ must be listed individually with the
 .B map
 directive.
 .TP
-.BI "map " "ipv4_address ipv6_address"
-Creates a static mapping between
-.I ipv4_address
+.BI "map " "ipv4_address[/length] ipv6_address[/length]"
+Creates a static mapping between RFC 7577 compliant hosts or subnets
+.I ipv4_address[/length]
 and
-.I ipv6_address
+.I ipv6_address[/length]
 to be used when translating IPv4 packets to IPv6 or IPv6 packets to IPv4.
+If
+.I /length
+is not present, the
+.I /length
+after
+.I ipv4_address
+is treated as "/32" and that of
+.I ipv6_address
+as "/128".
 Multiple
 .B map
 directives are permitted in the tayga.conf file.
