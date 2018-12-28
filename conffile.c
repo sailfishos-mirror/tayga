@@ -217,16 +217,43 @@ static void config_map(int ln, int arg_count, char **args)
 
 	m = alloc_map_static(ln);
 
+	char *slash;
+	slash = strchr(args[0], '/');
+	unsigned int prefix4 = 32;
+	if (slash) {
+		prefix4 = atoi(slash+1);
+		slash[0] = NULL;
+	}
+
 	if (!inet_pton(AF_INET, args[0], &m->map4.addr)) {
-		slog(LOG_CRIT, "Expected an IPv4 address but found \"%s\" on "
-				"line %d\n", args[0], ln);
+		slog(LOG_CRIT, "Expected an IPv4 subnet but found \"%s\" on "
+		     "line %d\n", args[0], ln);
 		exit(1);
 	}
+	m->map4.prefix_len = prefix4;
+	calc_ip4_mask(&m->map4.mask, NULL, prefix4);
+
+	unsigned int prefix6 = 128;
+	slash = strchr(args[1], '/');
+	if (slash) {
+		prefix6 = atoi(slash+1);
+		slash[0] = NULL;
+	}
+
+	if ((32 - prefix4) != (128 - prefix6)) {
+		slog(LOG_CRIT, "IPv4 and IPv6 subnet must be of the same size, but found"
+				" %s and %s on line %d\n", args[0], args[1], ln);
+		exit(1);
+	}
+
 	if (!inet_pton(AF_INET6, args[1], &m->map6.addr)) {
-		slog(LOG_CRIT, "Expected an IPv6 address but found \"%s\" on "
+		slog(LOG_CRIT, "Expected an IPv6 subnet but found \"%s\" on "
 				"line %d\n", args[1], ln);
 		exit(1);
 	}
+	m->map6.prefix_len = prefix6;
+	calc_ip6_mask(&m->map6.mask, NULL, prefix6);
+        
 	if (validate_ip4_addr(&m->map4.addr) < 0) {
 		slog(LOG_CRIT, "Cannot use reserved address %s in map "
 				"directive, aborting...\n", args[0]);
@@ -490,3 +517,10 @@ malloc_fail:
 	slog(LOG_CRIT, "Unable to allocate config memory\n");
 	exit(1);
 }
+
+/*
+Local Variables:
+c-basic-offset: 8
+indent-tabs-mode: t
+End:
+*/
