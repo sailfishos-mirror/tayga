@@ -4,18 +4,17 @@ tayga (0.9.2-7) unstable; urgency=medium
   * d/control: Set Vcs-* to salsa.debian.org
 
   [ Barak A. Pearlmutter ]
-  * remove pointer to old packaging repo: hg.debian.org is gone
-  * configure git-buildpackage
-  * bump to debhelper 12
-  * bump standards version
-  * accept patches from Benda Xu <heroxbd@gentoo.org>
-  * turn on hardening
-  * address lintian tag file-contains-trailing-whitespace
-  * address lintian tag debian-rules-uses-unnecessary-dh-argument
-  * harden
-  * sysv init script needs runtime dependency on lsb-base
-  * address lintian tag init.d-script-should-always-start-service
-  * address lintian tag skip-systemd-native-flag-missing-pre-depends
+  * Remove pointer to old packaging repo: hg.debian.org is gone.
+  * Configure git-buildpackage.
+  * Bump to debhelper 12.
+  * Bump Standards-Version.
+  * Accept patches from Benda Xu <heroxbd@gentoo.org>.
+  * Turn on hardening.
+  * SysV init script needs runtime dependency on lsb-base
+  * Address lintian tag file-contains-trailing-whitespace.
+  * Address lintian tag debian-rules-uses-unnecessary-dh-argument.
+  * Address lintian tag init.d-script-should-always-start-service
+  * Address lintian tag skip-systemd-native-flag-missing-pre-depends
 
  -- Barak A. Pearlmutter <bap@debian.org>  Tue, 12 Feb 2019 15:18:44 +0000
 
