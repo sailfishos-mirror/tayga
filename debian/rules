@@ -8,3 +8,6 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 override_dh_auto_install:
 	dh_auto_install
 	mv $(CURDIR)/debian/tayga/etc/tayga.conf.example $(CURDIR)/debian/tayga/etc/tayga.conf
+
+override_dh_installinit:
+	dh_installinit --no-enable

@@ -75,12 +75,6 @@ if [ -f "/etc/default/$NAME" ] ; then
     . "/etc/default/$NAME"
 fi
 
-if [ "$RUN" != "yes" ] ; then
-    log_failure_msg "$NAME disabled, please adjust the configuration to your needs "
-    log_failure_msg "and then set RUN to 'yes' in /etc/default/$NAME to enable it."
-    exit 0
-fi
-
 set -e
 
 running_pid() {

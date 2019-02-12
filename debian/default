@@ -2,9 +2,6 @@
 # sourced by /etc/init.d/tayga
 # installed at /etc/default/tayga by the maintainer scripts
 
-# Change this to "yes" to enable tayga
-RUN="no"
-
 # Configure interface and set the routes up
 CONFIGURE_IFACE="yes"
 
