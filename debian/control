@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Andrew Shadura <andrewsh@debian.org>
 Uploaders: Barak A. Pearlmutter <bap@debian.org>
-Build-Depends: debhelper-compat (>= 12)
+Build-Depends: debhelper-compat (= 12)
 Standards-Version: 4.3.0
 Vcs-Browser: https://salsa.debian.org/debian/tayga
 Homepage: http://www.litech.org/tayga/
