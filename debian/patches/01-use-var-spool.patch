@@ -1,15 +1,17 @@
 From: "Andrew O. Shadura" <bugzilla@tut.by>
+Date: Wed, 15 Jun 2011 15:56:55 +0300
 Subject: 01-use-var-spool
 
 use /var/spool/tayga instead of /var/db/tayga
 ---
- tayga.conf.example |    2 +-
+ tayga.conf.example | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tayga.conf.example b/tayga.conf.example
+index e5603d7..99b23c1 100644
 --- a/tayga.conf.example
 +++ b/tayga.conf.example
-@@ -84,7 +84,7 @@
+@@ -84,7 +84,7 @@ dynamic-pool 192.168.255.0/24
  #
  # Optional.
  #

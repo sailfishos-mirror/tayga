@@ -12,7 +12,7 @@ causing the wrong PID to be signaled later.)
 written we should retry the rest in a loop.  But in this case, that
 seems exceedingly unlikely.)
 ---
- tayga.c |    5 ++++-
+ tayga.c | 5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/tayga.c b/tayga.c

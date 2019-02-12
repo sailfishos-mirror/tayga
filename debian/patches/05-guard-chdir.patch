@@ -4,7 +4,7 @@ Subject: 05 guard chdir
 
 Guard chdir calls to avoid ignored-return-value warnings.
 ---
- tayga.c |   12 ++++++++++--
+ tayga.c | 12 ++++++++++--
  1 file changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/tayga.c b/tayga.c

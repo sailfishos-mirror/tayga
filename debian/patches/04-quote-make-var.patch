@@ -4,7 +4,7 @@ Subject: 04 quote make var
 
 Quote filename containing variable modifiable at make time.
 ---
- configure.ac |    2 +-
+ configure.ac | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/configure.ac b/configure.ac

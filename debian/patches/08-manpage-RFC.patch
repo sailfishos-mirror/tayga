@@ -1,3 +1,14 @@
+From: Benda Xu <heroxbd@gentoo.org>
+Date: Fri, 28 Dec 2018 00:00:00 +0000
+Subject: manpage-RFC
+
+---
+ tayga.8      | 10 +++++-----
+ tayga.conf.5 | 19 ++++++++++++++-----
+ 2 files changed, 19 insertions(+), 10 deletions(-)
+
+diff --git a/tayga.8 b/tayga.8
+index efb746f..e69cfc3 100644
 --- a/tayga.8
 +++ b/tayga.8
 @@ -1,4 +1,4 @@
@@ -6,7 +17,7 @@
  
  .SH NAME
  tayga \- stateless NAT64 daemon
-@@ -19,10 +19,10 @@
+@@ -19,10 +19,10 @@ driver, TAYGA receives IPv4 and IPv6 packets from the host's network stack,
  translates them to the other protocol, and then sends the translated packets
  back to the host using the same TUN interface.
  .P
@@ -21,6 +32,8 @@
  .P
  As a stateless NAT, TAYGA requires a one-to-one mapping between IPv4 addresses
  and IPv6 addresses.  Mapping multiple IPv6 addresses onto a single IPv4
+diff --git a/tayga.conf.5 b/tayga.conf.5
+index 3e084aa..76b1df8 100644
 --- a/tayga.conf.5
 +++ b/tayga.conf.5
 @@ -1,4 +1,4 @@
@@ -29,7 +42,7 @@
  .SH NAME
  tayga.conf \- configuration file of the TAYGA stateless NAT64 daemon
  .SH DESCRIPTION
-@@ -75,12 +75,21 @@
+@@ -75,12 +75,21 @@ must be listed individually with the
  .B map
  directive.
  .TP

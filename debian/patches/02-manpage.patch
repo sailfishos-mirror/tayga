@@ -1,15 +1,17 @@
 From: "Andrew O. Shadura" <bugzilla@tut.by>
+Date: Wed, 15 Jun 2011 15:56:55 +0300
 Subject: 02-manpage
 
 don't use hyphen as minus sign
 ---
- tayga.8 |    2 +-
+ tayga.8 | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tayga.8 b/tayga.8
+index d13d9ac..efb746f 100644
 --- a/tayga.8
 +++ b/tayga.8
-@@ -53,7 +53,7 @@
+@@ -53,7 +53,7 @@ not running.  This allows host-side network parameters and firewall rules to
  be configured prior to commencement of packet translation.  This may simplify
  network configuration on the host; for example, systems which use a
  Debian-style /etc/network/interfaces file may configure TAYGA's TUN device at
