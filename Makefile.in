@@ -35,10 +35,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 sbin_PROGRAMS = tayga$(EXEEXT)
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(dist_sysconf_DATA) \
-	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/config.h.in $(top_srcdir)/configure COPYING depcomp \
-	install-sh missing
+DIST_COMMON = README $(am__configure_deps) $(dist_man_MANS) \
+	$(dist_sysconf_DATA) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	$(top_srcdir)/configure COPYING depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -49,7 +49,8 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sysconfdir)"
+am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(man5dir)" \
+	"$(DESTDIR)$(man8dir)" "$(DESTDIR)$(sysconfdir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_tayga_OBJECTS = nat64.$(OBJEXT) addrmap.$(OBJEXT) dynamic.$(OBJEXT) \
 	tayga.$(OBJEXT) conffile.$(OBJEXT)
@@ -86,6 +87,10 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+man5dir = $(mandir)/man5
+man8dir = $(mandir)/man8
+NROFF = nroff
+MANS = $(dist_man_MANS)
 DATA = $(dist_sysconf_DATA)
 ETAGS = etags
 CTAGS = ctags
@@ -185,6 +190,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 dist_sysconf_DATA = tayga.conf.example
+dist_man_MANS = tayga.8 tayga.conf.5
 tayga_SOURCES = nat64.c addrmap.c dynamic.c tayga.c conffile.c tayga.h list.h
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -308,6 +314,82 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+install-man5: $(dist_man_MANS)
+	@$(NORMAL_INSTALL)
+	test -z "$(man5dir)" || $(MKDIR_P) "$(DESTDIR)$(man5dir)"
+	@list=''; test -n "$(man5dir)" || exit 0; \
+	{ for i in $$list; do echo "$$i"; done; \
+	l2='$(dist_man_MANS)'; for i in $$l2; do echo "$$i"; done | \
+	  sed -n '/\.5[a-z]*$$/p'; \
+	} | while read p; do \
+	  if test -f $$p; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; echo "$$p"; \
+	done | \
+	sed -e 'n;s,.*/,,;p;h;s,.*\.,,;s,^[^5][0-9a-z]*$$,5,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,' | \
+	sed 'N;N;s,\n, ,g' | { \
+	list=; while read file base inst; do \
+	  if test "$$base" = "$$inst"; then list="$$list $$file"; else \
+	    echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man5dir)/$$inst'"; \
+	    $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man5dir)/$$inst" || exit $$?; \
+	  fi; \
+	done; \
+	for i in $$list; do echo "$$i"; done | $(am__base_list) | \
+	while read files; do \
+	  test -z "$$files" || { \
+	    echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(man5dir)'"; \
+	    $(INSTALL_DATA) $$files "$(DESTDIR)$(man5dir)" || exit $$?; }; \
+	done; }
+
+uninstall-man5:
+	@$(NORMAL_UNINSTALL)
+	@list=''; test -n "$(man5dir)" || exit 0; \
+	files=`{ for i in $$list; do echo "$$i"; done; \
+	l2='$(dist_man_MANS)'; for i in $$l2; do echo "$$i"; done | \
+	  sed -n '/\.5[a-z]*$$/p'; \
+	} | sed -e 's,.*/,,;h;s,.*\.,,;s,^[^5][0-9a-z]*$$,5,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,'`; \
+	test -z "$$files" || { \
+	  echo " ( cd '$(DESTDIR)$(man5dir)' && rm -f" $$files ")"; \
+	  cd "$(DESTDIR)$(man5dir)" && rm -f $$files; }
+install-man8: $(dist_man_MANS)
+	@$(NORMAL_INSTALL)
+	test -z "$(man8dir)" || $(MKDIR_P) "$(DESTDIR)$(man8dir)"
+	@list=''; test -n "$(man8dir)" || exit 0; \
+	{ for i in $$list; do echo "$$i"; done; \
+	l2='$(dist_man_MANS)'; for i in $$l2; do echo "$$i"; done | \
+	  sed -n '/\.8[a-z]*$$/p'; \
+	} | while read p; do \
+	  if test -f $$p; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; echo "$$p"; \
+	done | \
+	sed -e 'n;s,.*/,,;p;h;s,.*\.,,;s,^[^8][0-9a-z]*$$,8,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,' | \
+	sed 'N;N;s,\n, ,g' | { \
+	list=; while read file base inst; do \
+	  if test "$$base" = "$$inst"; then list="$$list $$file"; else \
+	    echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man8dir)/$$inst'"; \
+	    $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man8dir)/$$inst" || exit $$?; \
+	  fi; \
+	done; \
+	for i in $$list; do echo "$$i"; done | $(am__base_list) | \
+	while read files; do \
+	  test -z "$$files" || { \
+	    echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(man8dir)'"; \
+	    $(INSTALL_DATA) $$files "$(DESTDIR)$(man8dir)" || exit $$?; }; \
+	done; }
+
+uninstall-man8:
+	@$(NORMAL_UNINSTALL)
+	@list=''; test -n "$(man8dir)" || exit 0; \
+	files=`{ for i in $$list; do echo "$$i"; done; \
+	l2='$(dist_man_MANS)'; for i in $$l2; do echo "$$i"; done | \
+	  sed -n '/\.8[a-z]*$$/p'; \
+	} | sed -e 's,.*/,,;h;s,.*\.,,;s,^[^8][0-9a-z]*$$,8,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,'`; \
+	test -z "$$files" || { \
+	  echo " ( cd '$(DESTDIR)$(man8dir)' && rm -f" $$files ")"; \
+	  cd "$(DESTDIR)$(man8dir)" && rm -f $$files; }
 install-dist_sysconfDATA: $(dist_sysconf_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(sysconfdir)" || $(MKDIR_P) "$(DESTDIR)$(sysconfdir)"
@@ -382,6 +464,19 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
 distdir: $(DISTFILES)
+	@list='$(MANS)'; if test -n "$$list"; then \
+	  list=`for p in $$list; do \
+	    if test -f $$p; then d=; else d="$(srcdir)/"; fi; \
+	    if test -f "$$d$$p"; then echo "$$d$$p"; else :; fi; done`; \
+	  if test -n "$$list" && \
+	    grep 'ab help2man is required to generate this page' $$list >/dev/null; then \
+	    echo "error: found man pages containing the \`missing help2man' replacement text:" >&2; \
+	    grep -l 'ab help2man is required to generate this page' $$list | sed 's/^/         /' >&2; \
+	    echo "       to fix them, install help2man, remove and regenerate the man pages;" >&2; \
+	    echo "       typically \`make maintainer-clean' will remove them" >&2; \
+	    exit 1; \
+	  else :; fi; \
+	else :; fi
 	$(am__remove_distdir)
 	test -d "$(distdir)" || mkdir "$(distdir)"
 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
@@ -530,9 +625,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(DATA) config.h
+all-am: Makefile $(PROGRAMS) $(MANS) $(DATA) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sysconfdir)"; do \
+	for dir in "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man8dir)" "$(DESTDIR)$(sysconfdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -583,7 +678,7 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-man
 
 install-dvi: install-dvi-am
 
@@ -599,7 +694,7 @@ install-info: install-info-am
 
 install-info-am:
 
-install-man:
+install-man: install-man5 install-man8
 
 install-pdf: install-pdf-am
 
@@ -630,7 +725,10 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-dist_sysconfDATA uninstall-sbinPROGRAMS
+uninstall-am: uninstall-dist_sysconfDATA uninstall-man \
+	uninstall-sbinPROGRAMS
+
+uninstall-man: uninstall-man5 uninstall-man8
 
 .MAKE: all install-am install-strip
 
@@ -643,13 +741,14 @@ uninstall-am: uninstall-dist_sysconfDATA uninstall-sbinPROGRAMS
 	info-am install install-am install-data install-data-am \
 	install-dist_sysconfDATA install-dvi install-dvi-am \
 	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-sbinPROGRAMS \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-dist_sysconfDATA \
-	uninstall-sbinPROGRAMS
+	install-info install-info-am install-man install-man5 \
+	install-man8 install-pdf install-pdf-am install-ps \
+	install-ps-am install-sbinPROGRAMS install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-dist_sysconfDATA uninstall-man \
+	uninstall-man5 uninstall-man8 uninstall-sbinPROGRAMS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
