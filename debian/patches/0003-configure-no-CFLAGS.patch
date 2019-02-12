@@ -1,6 +1,6 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Wed, 18 Apr 2012 09:07:57 +0100
-Subject: 03 configure no-CFLAGS
+Subject: configure no-CFLAGS
 
 Allow CFLAGS to default in configure.ac instead of hardwiring to -g -O2
 ---

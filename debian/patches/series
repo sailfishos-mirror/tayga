@@ -1,8 +1,8 @@
-01-use-var-spool.patch
-02-manpage.patch
-03-configure-no-CFLAGS.patch
-04-quote-make-var.patch
-05-guard-chdir.patch
-06-guard-write.patch
-07-static-EAM.patch
-08-manpage-RFC.patch
+0001-use-var-spool.patch
+0002-manpage.patch
+0003-configure-no-CFLAGS.patch
+0004-quote-make-var.patch
+0005-guard-chdir.patch
+0006-guard-write.patch
+0007-static-EAM.patch
+0008-manpage-RFC.patch

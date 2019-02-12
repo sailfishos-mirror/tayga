@@ -1,6 +1,6 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Wed, 18 Apr 2012 09:09:11 +0100
-Subject: 04 quote make var
+Subject: quote make var
 
 Quote filename containing variable modifiable at make time.
 ---

@@ -1,6 +1,6 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Wed, 18 Apr 2012 11:37:58 +0100
-Subject: 05 guard chdir
+Subject: guard chdir
 
 Guard chdir calls to avoid ignored-return-value warnings.
 ---

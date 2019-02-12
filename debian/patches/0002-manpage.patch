@@ -1,8 +1,8 @@
 From: "Andrew O. Shadura" <bugzilla@tut.by>
 Date: Wed, 15 Jun 2011 15:56:55 +0300
-Subject: 02-manpage
+Subject: manpage
 
-don't use hyphen as minus sign
+Don't use hyphen as minus sign in man pages.
 ---
  tayga.8 | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

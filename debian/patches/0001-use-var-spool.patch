@@ -1,8 +1,8 @@
 From: "Andrew O. Shadura" <bugzilla@tut.by>
 Date: Wed, 15 Jun 2011 15:56:55 +0300
-Subject: 01-use-var-spool
+Subject: use /var/spool
 
-use /var/spool/tayga instead of /var/db/tayga
+Modify sample configuration file to use /var/spool/tayga instead of /var/db/tayga
 ---
  tayga.conf.example | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

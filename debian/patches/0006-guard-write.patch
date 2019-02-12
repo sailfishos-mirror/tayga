@@ -1,6 +1,6 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Wed, 18 Apr 2012 11:47:19 +0100
-Subject: 06 guard write
+Subject: guard write
 
 Guard write call, avoid ignored-return-value warning.
 
