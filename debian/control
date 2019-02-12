@@ -11,6 +11,7 @@ Vcs-Git: https://salsa.debian.org/debian/tayga.git
 
 Package: tayga
 Architecture: linux-any
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends}, ${shlibs:Depends}, lsb-base
 Description: userspace stateless NAT64
  TAYGA is an out-of-kernel stateless NAT64 implementation for Linux
