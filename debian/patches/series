@@ -4,3 +4,5 @@
 04-quote-make-var.patch
 05-guard-chdir.patch
 06-guard-write.patch
+07-static-EAM.patch
+08-manpage-RFC.patch
