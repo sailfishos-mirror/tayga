@@ -1,3 +1,9 @@
+tayga (0.9.2-8) UNRELEASED; urgency=medium
+
+  * Update 0007-static-EAM.patch to support 0.0.0.0/0 subset.
+
+ -- Benda Xu <heroxbd@gentoo.org>  Wed, 13 Feb 2019 22:10:22 +0800
+
 tayga (0.9.2-7) unstable; urgency=medium
 
   [ Ondřej Nový ]
