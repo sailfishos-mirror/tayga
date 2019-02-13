@@ -1,0 +1,31 @@
+[Unit]
+Description=Simple, no-fuss NAT64
+After=network.target
+
+[Service]
+
+# To enable a tayga service with the default config
+#
+# systemctl enable tayga@default.service
+#
+# To set up an extra tayga service instance, create a new tayga config in
+# /etc/tayga/instancename.conf. Then enable this config as a systemd alias
+#
+# systemctl enable tayga@instancename.service
+#
+# If you want to make changes to this file, please symlink it to
+# /etc/systemd/system/tayga@instancename.service and make your changes there.
+# Configuration may be done in /etc/tayga/instancename.conf
+
+PIDFile=/run/tayga-%i.pid
+
+# Maximum size of the corefile.
+LimitCORE=infinity
+
+Type=simple
+PrivateTmp=true
+ExecStart=/usr/sbin/tayga --pidfile /var/run/tayga-%i.pid -d --config /etc/tayga/%i.conf
+
+
+[Install]
+WantedBy=multi-user.target
