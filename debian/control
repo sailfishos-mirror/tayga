@@ -2,7 +2,8 @@ Source: tayga
 Section: net
 Priority: optional
 Maintainer: Andrej Shadura <andrewsh@debian.org>
-Uploaders: Barak A. Pearlmutter <bap@debian.org>
+Uploaders: Barak A. Pearlmutter <bap@debian.org>,
+	Benda Xu <heroxbd@gentoo.org>
 Build-Depends: debhelper-compat (= 12)
 Standards-Version: 4.3.0
 Vcs-Browser: https://salsa.debian.org/debian/tayga
