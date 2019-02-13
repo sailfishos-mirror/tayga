@@ -2,6 +2,7 @@ From: Benda Xu <heroxbd@gentoo.org>
 Date: Fri, 28 Dec 2018 00:00:00 +0000
 Subject: manpage RFC
 
+Forwarded: Nathan Lutchansky <lutchann@litech.org>
 ---
  tayga.8      | 10 +++++-----
  tayga.conf.5 | 19 ++++++++++++++-----
@@ -33,7 +34,7 @@ index efb746f..e69cfc3 100644
  As a stateless NAT, TAYGA requires a one-to-one mapping between IPv4 addresses
  and IPv6 addresses.  Mapping multiple IPv6 addresses onto a single IPv4
 diff --git a/tayga.conf.5 b/tayga.conf.5
-index 3e084aa..76b1df8 100644
+index 3e084aa..7522c9d 100644
 --- a/tayga.conf.5
 +++ b/tayga.conf.5
 @@ -1,4 +1,4 @@
@@ -58,7 +59,7 @@ index 3e084aa..76b1df8 100644
  to be used when translating IPv4 packets to IPv6 or IPv6 packets to IPv4.
 +If
 +.I /length
-+is not present,
++is not present, the
 +.I /length
 +after
 +.I ipv4_address
