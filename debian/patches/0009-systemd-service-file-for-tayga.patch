@@ -56,13 +56,13 @@ index fa99305..ca65097 100644
  tayga_conf_path='${sysconfdir}/tayga.conf'
 diff --git a/tayga.service b/tayga.service
 new file mode 100644
-index 0000000..6c05f28
+index 0000000..939b5c4
 --- /dev/null
 +++ b/tayga.service
 @@ -0,0 +1,31 @@
 +[Unit]
 +Description=Simple, no-fuss NAT64
-+After=syslog.target network.target
++After=network.target
 +
 +[Service]
 +
