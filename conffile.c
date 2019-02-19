@@ -222,7 +222,7 @@ static void config_map(int ln, int arg_count, char **args)
 	unsigned int prefix4 = 32;
 	if (slash) {
 		prefix4 = atoi(slash+1);
-		slash[0] = NULL;
+		slash[0] = '\0';
 	}
 
 	if (!inet_pton(AF_INET, args[0], &m->map4.addr)) {
@@ -237,7 +237,7 @@ static void config_map(int ln, int arg_count, char **args)
 	slash = strchr(args[1], '/');
 	if (slash) {
 		prefix6 = atoi(slash+1);
-		slash[0] = NULL;
+		slash[0] = '\0';
 	}
 
 	if ((32 - prefix4) != (128 - prefix6)) {
