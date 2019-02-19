@@ -7,3 +7,5 @@
 0007-static-EAM.patch
 0008-manpage-RFC.patch
 0009-systemd-service-file-for-tayga.patch
+0010-include-for-writev.patch
+0011-null-char.patch

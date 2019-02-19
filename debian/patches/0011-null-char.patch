@@ -1,0 +1,36 @@
+From: "Barak A. Pearlmutter" <barak+git@pearlmutter.net>
+Date: Tue, 19 Feb 2019 12:06:01 +0000
+Subject: null char
+
+conffile.c:225:12: warning: assignment to `char' from `void *' makes integer from pointer without a cast [-Wint-conversion]
+   slash[0] = NULL;
+            ^
+conffile.c:240:12: warning: assignment to `char' from `void *' makes integer from pointer without a cast [-Wint-conversion]
+   slash[0] = NULL;
+            ^
+---
+ conffile.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/conffile.c b/conffile.c
+index dd4193c..0406cfd 100644
+--- a/conffile.c
++++ b/conffile.c
+@@ -222,7 +222,7 @@ static void config_map(int ln, int arg_count, char **args)
+ 	unsigned int prefix4 = 32;
+ 	if (slash) {
+ 		prefix4 = atoi(slash+1);
+-		slash[0] = NULL;
++		slash[0] = '\0';
+ 	}
+ 
+ 	if (!inet_pton(AF_INET, args[0], &m->map4.addr)) {
+@@ -237,7 +237,7 @@ static void config_map(int ln, int arg_count, char **args)
+ 	slash = strchr(args[1], '/');
+ 	if (slash) {
+ 		prefix6 = atoi(slash+1);
+-		slash[0] = NULL;
++		slash[0] = '\0';
+ 	}
+ 
+ 	if ((32 - prefix4) != (128 - prefix6)) {
