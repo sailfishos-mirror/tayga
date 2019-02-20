@@ -1,0 +1,15 @@
+Uploading tayga
+===============
+
+Please consider using dgit when uploading tayga. When your source
+changes are ready, run:
+
+    dgit --quilt=gbp build-source
+
+That will do basic sanity checks (e.g. that there are no uncommitted changes)
+and generate a source package in the parent directory. Then run:
+
+    dgit --quilt=gbp push
+
+This will add the commit hash to the .dsc file, sign the changes file, push
+your changes to dgit and upload the source package to the archive.
