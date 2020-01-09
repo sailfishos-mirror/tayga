@@ -13,11 +13,9 @@ Forwarded: Nathan Lutchansky <lutchann@litech.org>
  conffile.c | 40 +++++++++++++++++++++++++++++++++++++---
  2 files changed, 60 insertions(+), 9 deletions(-)
 
-diff --git a/addrmap.c b/addrmap.c
-index 7a4bf8b..24926d8 100644
 --- a/addrmap.c
 +++ b/addrmap.c
-@@ -22,10 +22,6 @@ extern time_t now;
+@@ -22,10 +22,6 @@
  
  int validate_ip4_addr(const struct in_addr *a)
  {
@@ -28,7 +26,7 @@ index 7a4bf8b..24926d8 100644
  	/* First octet == 127 */
  	if ((a->s_addr & htonl(0xff000000)) == htonl(0x7f000000))
  		return -1;
-@@ -97,7 +93,12 @@ int is_private_ip4_addr(const struct in_addr *a)
+@@ -97,7 +93,7 @@
  
  int calc_ip4_mask(struct in_addr *mask, const struct in_addr *addr, int len)
  {
@@ -37,7 +35,7 @@ index 7a4bf8b..24926d8 100644
  	if (addr && (addr->s_addr & ~mask->s_addr))
  		return -1;
  	return 0;
-@@ -422,6 +423,9 @@ int map_ip4_to_ip6(struct in6_addr *addr6, const struct in_addr *addr4,
+@@ -422,6 +418,9 @@
  	case MAP_TYPE_STATIC:
  		s = container_of(map4, struct map_static, map4);
  		*addr6 = s->map6.addr;
@@ -47,7 +45,7 @@ index 7a4bf8b..24926d8 100644
  		break;
  	case MAP_TYPE_RFC6052:
  		s = container_of(map4, struct map_static, map4);
-@@ -564,7 +568,13 @@ int map_ip6_to_ip4(struct in_addr *addr4, const struct in6_addr *addr6,
+@@ -564,7 +563,13 @@
  	switch (map6->type) {
  	case MAP_TYPE_STATIC:
  		s = container_of(map6, struct map_static, map6);
@@ -62,7 +60,7 @@ index 7a4bf8b..24926d8 100644
  		break;
  	case MAP_TYPE_RFC6052:
  		if (extract_from_prefix(addr4, addr6, map6->prefix_len) < 0)
-@@ -629,3 +639,10 @@ void addrmap_maint(void)
+@@ -629,3 +634,10 @@
  		}
  	}
  }
@@ -73,11 +71,9 @@ index 7a4bf8b..24926d8 100644
 +indent-tabs-mode: t
 +End:
 +*/
-diff --git a/conffile.c b/conffile.c
-index ec6433c..dd4193c 100644
 --- a/conffile.c
 +++ b/conffile.c
-@@ -217,16 +217,43 @@ static void config_map(int ln, int arg_count, char **args)
+@@ -217,16 +217,43 @@
  
  	m = alloc_map_static(ln);
  
@@ -94,8 +90,8 @@ index ec6433c..dd4193c 100644
 -				"line %d\n", args[0], ln);
 +		slog(LOG_CRIT, "Expected an IPv4 subnet but found \"%s\" on "
 +		     "line %d\n", args[0], ln);
- 		exit(1);
- 	}
++		exit(1);
++	}
 +	m->map4.prefix_len = prefix4;
 +	calc_ip4_mask(&m->map4.mask, NULL, prefix4);
 +
@@ -109,8 +105,8 @@ index ec6433c..dd4193c 100644
 +	if ((32 - prefix4) != (128 - prefix6)) {
 +		slog(LOG_CRIT, "IPv4 and IPv6 subnet must be of the same size, but found"
 +				" %s and %s on line %d\n", args[0], args[1], ln);
-+		exit(1);
-+	}
+ 		exit(1);
+ 	}
 +
  	if (!inet_pton(AF_INET6, args[1], &m->map6.addr)) {
 -		slog(LOG_CRIT, "Expected an IPv6 address but found \"%s\" on "
@@ -124,7 +120,7 @@ index ec6433c..dd4193c 100644
  	if (validate_ip4_addr(&m->map4.addr) < 0) {
  		slog(LOG_CRIT, "Cannot use reserved address %s in map "
  				"directive, aborting...\n", args[0]);
-@@ -490,3 +517,10 @@ malloc_fail:
+@@ -490,3 +517,10 @@
  	slog(LOG_CRIT, "Unable to allocate config memory\n");
  	exit(1);
  }
