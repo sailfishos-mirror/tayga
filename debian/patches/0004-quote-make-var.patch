@@ -1,8 +1,7 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Wed, 18 Apr 2012 09:09:11 +0100
-Subject: quote make var
+Subject: Quote filename containing variable modifiable at make time
 
-Quote filename containing variable modifiable at make time.
 ---
  configure.ac | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

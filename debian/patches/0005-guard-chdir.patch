@@ -1,8 +1,6 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Wed, 18 Apr 2012 11:37:58 +0100
-Subject: guard chdir
-
-Guard chdir calls to avoid ignored-return-value warnings.
+Subject: Guard chdir calls to avoid ignored-return-value warnings
 ---
  tayga.c | 12 ++++++++++--
  1 file changed, 10 insertions(+), 2 deletions(-)

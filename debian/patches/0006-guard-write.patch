@@ -1,8 +1,6 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Wed, 18 Apr 2012 11:47:19 +0100
-Subject: guard write
-
-Guard write call, avoid ignored-return-value warning.
+Subject: Guard write call, avoid ignored-return-value warning
 
 (This is not a false positive: a very subtle attack would consist of
 filling up the filesystem so much that only a partial PID is written,

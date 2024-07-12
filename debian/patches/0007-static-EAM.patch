@@ -1,8 +1,6 @@
 From: Benda Xu <heroxbd@gentoo.org>
 Date: Fri, 28 Dec 2018 00:00:00 +0000
-Subject: static EAM
-
-Support SIIT-DC styled EAM static maps
+Subject: Support SIIT-DC styled EAM static maps
 
 Introduce Explicit Address Mapping as defined in RFC7757.  This extends the
 `map <ipv4> <ipv6>` into `map <ipv4 subnet> <ipv6 subnet>`.

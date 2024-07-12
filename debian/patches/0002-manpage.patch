@@ -1,8 +1,6 @@
-From: "Andrew O. Shadura" <bugzilla@tut.by>
+From: Andrej Shadura <andrewsh@debian.org>
 Date: Wed, 15 Jun 2011 15:56:55 +0300
-Subject: manpage
-
-Don't use hyphen as minus sign in man pages.
+Subject: Don't use hyphen as minus sign in man pages
 ---
  tayga.8 | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
