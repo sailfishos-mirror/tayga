@@ -6,7 +6,7 @@ Uploaders:
  Barak A. Pearlmutter <bap@debian.org>,
  Benda Xu <heroxbd@gentoo.org>
 Build-Depends:
- debhelper-compat (= 12)
+ debhelper-compat (= 13)
 Standards-Version: 4.6.2
 Vcs-Browser: https://salsa.debian.org/debian/tayga
 Homepage: http://www.litech.org/tayga/
