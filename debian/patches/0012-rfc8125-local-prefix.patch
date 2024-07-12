@@ -1,0 +1,55 @@
+From: Andrew Palardy <andrew@apalrd.net>
+Date: Fri, 12 Jul 2024 01:25:43 +0000
+Subject: Implement correct RFC8215 behavior
+
+Tayga did not correctly support the RFC8125 local-use translation prefix.
+This patch fixes several places where the well-known prefix (64:ff9b::/96)
+was not being fully compared as a /96, instead as a /32. The local-use
+translation prefix (64:ff9b:1::/48) does not have all of the same
+restrictions.
+
+Bug-Debian: https://bugs.debian.org/1061773
+Last-Update: 2024-07-12
+
+--- tayga-0.9.2.orig/addrmap.c
++++ tayga-0.9.2/addrmap.c
+@@ -39,10 +39,11 @@ int validate_ip4_addr(const struct in_ad
+ 
+ int validate_ip6_addr(const struct in6_addr *a)
+ {
+-	/* Well-known prefix for NAT64 */
+-	if (a->s6_addr32[0] == WKPF && !a->s6_addr32[1] && !a->s6_addr32[2])
++	/* Well-known prefix for NAT64, plus Local-Use Space */
++	if (a->s6_addr32[0] == WKPF)
+ 		return 0;
+ 
++
+ 	/* Reserved per RFC 2373 */
+ 	if (!a->s6_addr[0])
+ 		return -1;
+@@ -376,7 +377,11 @@ int append_to_prefix(struct in6_addr *ad
+ #endif
+ 		return 0;
+ 	case 96:
+-		if (prefix->s6_addr32[0] == WKPF &&
++		//Do not allow translation of well-known prefix
++		//But still allow local-use prefix
++		if (prefix->s6_addr32[0] == WKPF && 
++				!prefix->s6_addr32[1] && 
++				!prefix->s6_addr32[2] && 
+ 				is_private_ip4_addr(addr4))
+ 			return -1;
+ 		addr6->s6_addr32[0] = prefix->s6_addr32[0];
+--- tayga-0.9.2.orig/tayga.c
++++ tayga-0.9.2/tayga.c
+@@ -504,7 +504,9 @@ int main(int argc, char **argv)
+ 		inet_ntop(AF_INET6, &m6->addr, addrbuf, sizeof(addrbuf));
+ 		slog(LOG_INFO, "NAT64 prefix: %s/%d\n",
+ 				addrbuf, m6->prefix_len);
+-		if (m6->addr.s6_addr32[0] == WKPF)
++		if (m6->addr.s6_addr32[0] == WKPF 
++			&& !m6->addr.s6_addr32[1]
++			&& !m6->addr.s6_addr32[2])
+ 			slog(LOG_INFO, "Note: traffic between IPv6 hosts and "
+ 					"private IPv4 addresses (i.e. to/from "
+ 					"64:ff9b::10.0.0.0/104, "
