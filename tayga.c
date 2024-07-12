@@ -504,7 +504,9 @@ int main(int argc, char **argv)
 		inet_ntop(AF_INET6, &m6->addr, addrbuf, sizeof(addrbuf));
 		slog(LOG_INFO, "NAT64 prefix: %s/%d\n",
 				addrbuf, m6->prefix_len);
-		if (m6->addr.s6_addr32[0] == WKPF)
+		if (m6->addr.s6_addr32[0] == WKPF 
+			&& !m6->addr.s6_addr32[1]
+			&& !m6->addr.s6_addr32[2])
 			slog(LOG_INFO, "Note: traffic between IPv6 hosts and "
 					"private IPv4 addresses (i.e. to/from "
 					"64:ff9b::10.0.0.0/104, "

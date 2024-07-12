@@ -39,9 +39,10 @@ int validate_ip4_addr(const struct in_addr *a)
 
 int validate_ip6_addr(const struct in6_addr *a)
 {
-	/* Well-known prefix for NAT64 */
-	if (a->s6_addr32[0] == WKPF && !a->s6_addr32[1] && !a->s6_addr32[2])
+	/* Well-known prefix for NAT64, plus Local-Use Space */
+	if (a->s6_addr32[0] == WKPF)
 		return 0;
+
 
 	/* Reserved per RFC 2373 */
 	if (!a->s6_addr[0])
@@ -371,7 +372,11 @@ int append_to_prefix(struct in6_addr *addr6, const struct in_addr *addr4,
 #endif
 		return 0;
 	case 96:
-		if (prefix->s6_addr32[0] == WKPF &&
+		//Do not allow translation of well-known prefix
+		//But still allow local-use prefix
+		if (prefix->s6_addr32[0] == WKPF && 
+				!prefix->s6_addr32[1] && 
+				!prefix->s6_addr32[2] && 
 				is_private_ip4_addr(addr4))
 			return -1;
 		addr6->s6_addr32[0] = prefix->s6_addr32[0];
