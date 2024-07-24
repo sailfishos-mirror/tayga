@@ -1,3 +1,9 @@
+tayga (0.9.2-10) unstable; urgency=medium
+
+  * Ship a systemd service supporting the default config (Closes: #1039390)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 24 Jul 2024 08:36:16 +0200
+
 tayga (0.9.2-9) unstable; urgency=medium
 
   [ Benda Xu ]
