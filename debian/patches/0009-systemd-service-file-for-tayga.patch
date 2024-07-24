@@ -5,14 +5,16 @@ Subject: Ship systemd service file for tayga
 Snarfed from
 https://ingvar.fedorapeople.org/tayga/tayga-0.9.2_redhat_initscripts_and_systemd.patch
 ---
- Makefile.am   |  7 +++++++
- configure.ac  | 17 +++++++++++++++++
- tayga.service | 31 +++++++++++++++++++++++++++++++
- 3 files changed, 55 insertions(+)
+ Makefile.am    |  7 +++++++
+ configure.ac   | 17 +++++++++++++++++
+ tayga.service  | 11 +++++++++++
+ tayga@.service | 16 ++++++++++++++++
+ 4 files changed, 51 insertions(+)
  create mode 100644 tayga.service
+ create mode 100644 tayga@.service
 
 diff --git a/Makefile.am b/Makefile.am
-index 55fce24..b90354b 100644
+index 55fce24..2dfbc2b 100644
 --- a/Makefile.am
 +++ b/Makefile.am
 @@ -7,3 +7,10 @@ dist_sysconf_DATA = tayga.conf.example
@@ -24,7 +26,7 @@ index 55fce24..b90354b 100644
 +AM_DISTCHECK_CONFIGURE_FLAGS = \
 + --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
 +if HAVE_SYSTEMD
-+systemdsystemunit_DATA = tayga.service
++systemdsystemunit_DATA = tayga.service tayga@.service
 +endif
 diff --git a/configure.ac b/configure.ac
 index fa99305..ca65097 100644
@@ -56,38 +58,40 @@ index fa99305..ca65097 100644
  tayga_conf_path='${sysconfdir}/tayga.conf'
 diff --git a/tayga.service b/tayga.service
 new file mode 100644
-index 0000000..939b5c4
+index 0000000..7482257
 --- /dev/null
 +++ b/tayga.service
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,11 @@
 +[Unit]
 +Description=Simple, no-fuss NAT64
 +After=network.target
 +
 +[Service]
++Type=simple
++PrivateTmp=true
++ExecStart=/usr/sbin/tayga -d --config /etc/tayga.conf
 +
-+# To enable a tayga service with the default config
-+#
-+# systemctl enable tayga@default.service
-+#
++[Install]
++WantedBy=multi-user.target
+diff --git a/tayga@.service b/tayga@.service
+new file mode 100644
+index 0000000..6c9c145
+--- /dev/null
++++ b/tayga@.service
+@@ -0,0 +1,16 @@
++[Unit]
++Description=Simple, no-fuss NAT64
++After=network.target
++
++[Service]
 +# To set up an extra tayga service instance, create a new tayga config in
 +# /etc/tayga/instancename.conf. Then enable this config as a systemd alias
 +#
 +# systemctl enable tayga@instancename.service
-+#
-+# If you want to make changes to this file, please symlink it to
-+# /etc/systemd/system/tayga@instancename.service and make your changes there.
-+# Configuration may be done in /etc/tayga/instancename.conf
-+
-+PIDFile=/run/tayga-%i.pid
-+
-+# Maximum size of the corefile.
-+LimitCORE=infinity
 +
 +Type=simple
 +PrivateTmp=true
-+ExecStart=/usr/sbin/tayga --pidfile /var/run/tayga-%i.pid -d --config /etc/tayga/%i.conf
-+
++ExecStart=/usr/sbin/tayga -d --config /etc/tayga/%i.conf
 +
 +[Install]
 +WantedBy=multi-user.target
