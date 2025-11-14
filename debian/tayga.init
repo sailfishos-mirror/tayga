@@ -98,16 +98,7 @@ running() {
 }
 
 start_server() {
-    if [ "$CONFIGURE_IFACE" = "yes" ] ; then
-		"$DAEMON" --mktun | logger -t "$NAME" -i
-		ip link set "$TUN_DEVICE" up
-		[ -n "$DYNAMIC_POOL" ] && ip route add "$DYNAMIC_POOL" dev "$TUN_DEVICE"
-		[ -n "$IPV6_PREFIX" ] && ip route add "$IPV6_PREFIX" dev "$TUN_DEVICE"
-		[ -n "$IPV4_TUN_ADDR" ] && ip addr add "$IPV4_TUN_ADDR" dev "$TUN_DEVICE"
-		[ -n "$IPV6_TUN_ADDR" ] && ip addr add "$IPV6_TUN_ADDR" dev "$TUN_DEVICE"
-    fi
-    [ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ] && iptables -t nat -A POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
-
+	/usr/libexec/tayga/tayga-iface-setup.sh start
 	start-stop-daemon --start --quiet \
 		-b --exec "$DAEMON" --  --pidfile "$PIDFILE" $DAEMON_OPTS
 }
@@ -115,13 +106,7 @@ start_server() {
 stop_server() {
 	start-stop-daemon --stop --quiet --pidfile "$PIDFILE"
 	errcode=$?
-	if [ "$CONFIGURE_IFACE" = "yes" ] ; then
-		ip link set "$TUN_DEVICE" down
-		"$DAEMON" --rmtun | logger -t "$NAME" -i
-	fi
-	[ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ] && iptables -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
-	rm -f "$PIDFILE"
-
+	/usr/libexec/tayga/tayga-iface-setup.sh stop
 	return $errcode
 }
 
