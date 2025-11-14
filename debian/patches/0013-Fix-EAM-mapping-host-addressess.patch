@@ -1,0 +1,15 @@
+Description: Fix EAM mapping for host addressess
+Origin: https://github.com/apalrd/tayga/pull/12/commits/ac2a805e10360c41bfe58b18d9391d6fe6a3421a
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1082060
+Bug: https://github.com/apalrd/tayga/issues/2
+Applied-Upstream: https://github.com/apalrd/tayga/commit/68cc06f97dcbdaa8de8ed0eb61783500b822e408
+--- a/addrmap.c
++++ b/addrmap.c
+@@ -95,6 +95,7 @@ int is_private_ip4_addr(const struct in_
+ int calc_ip4_mask(struct in_addr *mask, const struct in_addr *addr, int len)
+ {
+ 	mask->s_addr = htonl(~(0xffffffff >> len));
++	if (len == 32) mask->s_addr = 0xffffffff;
+ 	if (addr && (addr->s_addr & ~mask->s_addr))
+ 		return -1;
+ 	return 0;
