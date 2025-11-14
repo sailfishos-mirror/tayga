@@ -20,7 +20,6 @@ Architecture: linux-any
 Pre-Depends:
  ${misc:Pre-Depends}
 Depends:
- init-system-helpers (>= 1.50),
  lsb-base,
  ${misc:Depends},
  ${shlibs:Depends}
