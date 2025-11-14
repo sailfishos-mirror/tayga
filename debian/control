@@ -14,6 +14,14 @@ Vcs-Browser: https://salsa.debian.org/debian/tayga
 Homepage: http://www.litech.org/tayga/
 Vcs-Git: https://salsa.debian.org/debian/tayga.git
 Rules-Requires-Root: no
+Description: Simple, no-fuss userspace IPv6<>IPv4 translator
+ TAYGA is a userspace IP/ICMP translator implemented using a virtual (TUN)
+ device. It can be configured to act as a stateless IP/ICMP translator
+ (SIIT, RFC 6145) with Explicit Address Mapping (EAM, RFC 7757) or a
+ stateful NAT64 (RFC 6146).
+ .
+ As such it's useful as part of a 464XLAT (RFC 6146), IPv6-only or
+ IPv6-mostly (RFCs pending) network architecture.
 
 Package: tayga
 Architecture: linux-any
@@ -23,10 +31,11 @@ Depends:
  lsb-base,
  ${misc:Depends},
  ${shlibs:Depends}
-Description: userspace stateless NAT64
- TAYGA is an out-of-kernel stateless NAT64 implementation for Linux
- that uses the TUN driver to exchange IPv4 and IPv6 packets with
- the kernel. It is intended to provide production-quality NAT64
- service for networks where dedicated NAT64 hardware would be
- overkill. TAYGA needs no kernel patches or out-of-tree
- modules, and it is compatible with all 2.4 and 2.6 kernels.
+Description: ${source:Synopsis}
+ ${source:Extended-Description}
+ .
+ This package configures TAYGA to act as a stateful NAT64/PLAT (464XLAT) using
+ iptables by default.
+ .
+ For automatic CLAT setup the `clatd' Debian package can make use of TAYGA
+ as packet translator.
