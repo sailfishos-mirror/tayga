@@ -28,7 +28,6 @@ Architecture: linux-any
 Pre-Depends:
  ${misc:Pre-Depends}
 Depends:
- lsb-base,
  ${misc:Depends},
  ${shlibs:Depends}
 Description: ${source:Synopsis}
