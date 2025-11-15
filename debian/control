@@ -39,6 +39,7 @@ Pre-Depends:
  ${misc:Pre-Depends}
 Depends:
  tayga-core,
+ nftables,
  ${misc:Depends},
 Description: ${source:Synopsis} - NAT64 service
  ${source:Extended-Description}

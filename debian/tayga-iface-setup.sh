@@ -10,6 +10,9 @@ DYNAMIC_POOL=$(sed -rn "/^[ \t]*dynamic-pool/s/^[ \t]*dynamic-pool[ \t]+//p" $CO
 CONFIGURE_IFACE="no"
 CONFIGURE_NAT44="no"
 
+IPTABLES=${IPTABLES:-iptables}
+type $IPTABLES >/dev/null 2>&1 || IPTABLES=true
+
 # Include defaults if available
 if [ -f "/etc/default/$NAME" ]; then
     . "/etc/default/$NAME"
@@ -24,7 +27,19 @@ setup_iface() {
 	    [ -n "$IPV4_TUN_ADDR" ] && ip addr add "$IPV4_TUN_ADDR" dev "$TUN_DEVICE"
 	    [ -n "$IPV6_TUN_ADDR" ] && ip addr add "$IPV6_TUN_ADDR" dev "$TUN_DEVICE"
     fi
-    [ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ] && iptables -t nat -A POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
+    if [ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ]; then
+            # Make sure we clear the legacy rule.
+            $IPTABLES -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
+            nft -f- <<EOF || true
+# TODO: Replace add/delete/add sequence with 'destroy'
+# ... once it doesn't segfault :-)
+add table ip tayga
+delete table ip tayga
+add table ip tayga
+add chain ip tayga srcnat { type nat hook postrouting priority srcnat; }
+add rule  ip tayga srcnat ip saddr $DYNAMIC_POOL counter masquerade
+EOF
+    fi
 }
 
 teardown_iface() {
@@ -32,7 +47,10 @@ teardown_iface() {
 		ip link set "$TUN_DEVICE" down
 		"$DAEMON" --rmtun | logger -t "$NAME" -i
 	fi
-	[ "$CONFIGURE_NAT44" = "yes" ] && [ -n "$DYNAMIC_POOL" ] && iptables -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
+        $IPTABLES -t nat -D POSTROUTING -s "$DYNAMIC_POOL" -j MASQUERADE || true
+        if nft list table ip tayga >/dev/null 2>&1; then
+                nft delete table ip tayga
+        fi
 }
 
 case $1 in
