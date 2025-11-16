@@ -45,16 +45,16 @@ check_iptables_rule () {
 
 cleanup_iptables_rules () {
         IPTABLES=iptables
-        if [ -d /sys/module/nft_compat ] && type iptables-nft >/dev/null 2>&1
+        if [ -d /sys/module/ip_tables ] && type iptables-legacy >/dev/null 2>&1
         then
-                IPTABLES=iptables-nft
+                IPTABLES=iptables-legacy
                 del_iptables_rule
                 del_iptables_rule $IPT_COMMENT
         fi
 
-        if [ -d /sys/module/ip_tables ] && type iptables-legacy >/dev/null 2>&1
+        if [ -d /sys/module/nft_compat ] && type iptables-nft >/dev/null 2>&1
         then
-                IPTABLES=iptables-legacy
+                IPTABLES=iptables-nft
                 del_iptables_rule
                 del_iptables_rule $IPT_COMMENT
         fi
