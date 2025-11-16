@@ -14,7 +14,7 @@ Vcs-Browser: https://salsa.debian.org/debian/tayga
 Homepage: http://www.litech.org/tayga/
 Vcs-Git: https://salsa.debian.org/debian/tayga.git
 Rules-Requires-Root: no
-Description: Simple, no-fuss userspace IPv6<>IPv4 translator
+Description: Simple, no-fuss userspace IPv6-IPv4 translator
  TAYGA is a userspace IP/ICMP translator implemented using a virtual (TUN)
  device. It can be configured to act as a stateless IP/ICMP translator
  (SIIT, RFC 6145) with Explicit Address Mapping (EAM, RFC 7757) or a
