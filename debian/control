@@ -1,10 +1,10 @@
 Source: tayga
 Section: net
 Priority: optional
-Maintainer: Andrej Shadura <andrewsh@debian.org>
+Maintainer: Debian Networking Team <team+networking@tracker.debian.org>
 Uploaders:
- Barak A. Pearlmutter <bap@debian.org>,
- Benda Xu <heroxbd@gentoo.org>
+ Andrej Shadura <andrewsh@debian.org>,
+ Daniel Gröber <dxld@darkboxed.org>,
 Build-Depends:
  debhelper-compat (= 13),
  pkgconf,
