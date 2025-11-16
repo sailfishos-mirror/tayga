@@ -13,8 +13,6 @@ https://ingvar.fedorapeople.org/tayga/tayga-0.9.2_redhat_initscripts_and_systemd
  create mode 100644 tayga.service
  create mode 100644 tayga@.service
 
-diff --git a/Makefile.am b/Makefile.am
-index 55fce24..2dfbc2b 100644
 --- a/Makefile.am
 +++ b/Makefile.am
 @@ -7,3 +7,10 @@ dist_sysconf_DATA = tayga.conf.example
@@ -28,8 +26,6 @@ index 55fce24..2dfbc2b 100644
 +if HAVE_SYSTEMD
 +systemdsystemunit_DATA = tayga.service tayga@.service
 +endif
-diff --git a/configure.ac b/configure.ac
-index fa99305..ca65097 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -3,6 +3,23 @@ AC_CONFIG_SRCDIR(nat64.c)
@@ -56,12 +52,9 @@ index fa99305..ca65097 100644
  AC_PROG_CC
  
  tayga_conf_path='${sysconfdir}/tayga.conf'
-diff --git a/tayga.service b/tayga.service
-new file mode 100644
-index 0000000..7482257
 --- /dev/null
 +++ b/tayga.service
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,13 @@
 +[Unit]
 +Description=Simple, no-fuss NAT64
 +After=network.target
@@ -69,13 +62,12 @@ index 0000000..7482257
 +[Service]
 +Type=simple
 +PrivateTmp=true
++ExecStartPre=/usr/libexec/tayga/tayga-iface-setup.sh start
 +ExecStart=/usr/sbin/tayga -d --config /etc/tayga.conf
++ExecStopPost=/usr/libexec/tayga/tayga-iface-setup.sh stop
 +
 +[Install]
 +WantedBy=multi-user.target
-diff --git a/tayga@.service b/tayga@.service
-new file mode 100644
-index 0000000..6c9c145
 --- /dev/null
 +++ b/tayga@.service
 @@ -0,0 +1,16 @@

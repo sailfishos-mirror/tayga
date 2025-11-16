@@ -13,6 +13,7 @@ tayga (0.9.2-11) UNRELEASED; urgency=medium
   * Move iface setup code into tayga-iface-setup.sh
   * Add missing iptables dependency (Closes: #771410)
   * Improve handling of iptables-nft and iptables-legacy
+  * Support CONFIGURE_* options in systemd unit (Closes: #1079593)
 
  -- Daniel Gröber <dxld@darkboxed.org>  Sat, 15 Nov 2025 23:58:30 +0100
 
