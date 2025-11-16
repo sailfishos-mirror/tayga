@@ -3,7 +3,7 @@ Upstream-Name: tayga
 Upstream-Contact: Nathan Lutchansky <lutchann@litech.org>
 Source: http://www.litech.org/tayga/
 Comment: This package was debianized by:
-     Andrew O. Shadura <bugzilla@tut.by> on Mon, 27 Dec 2010 18:05:20 +0200
+ Andrej Shadura <andrewsh@debian.org> on Mon, 27 Dec 2010 18:05:20 +0200
 
 Files: *
 Copyright:
@@ -12,7 +12,7 @@ License: GPL-2+
 
 Files: debian/*
 Copyright:
-    2010 Andrew O. Shadura <bugzilla@tut.by>
+    2010, 2024 Andrej Shadura <andrewsh@debian.org>
     2025 Daniel Gröber <dxld@debian.org>
 License: GPL-2+
 
