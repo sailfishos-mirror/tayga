@@ -21,7 +21,7 @@ Description: Simple, no-fuss userspace IPv6-IPv4 translator
  stateful NAT64 (RFC 6146).
  .
  As such it's useful as part of a 464XLAT (RFC 6146), IPv6-only or
- IPv6-mostly (RFCs pending) network architecture.
+ IPv6-mostly network architecture.
 
 Package: tayga-core
 Architecture: linux-any
