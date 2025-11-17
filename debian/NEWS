@@ -1,7 +1,11 @@
 tayga (0.9.2-11) unstable; urgency=medium
 
-  * Systemd users (tayga.service) should note that the previously
-    ignored options CONFIGURE_IFACE and CONFIGURE_NAT44 from
+  * Users of the systemd unit tayga.service should note that the
+    previously ignored options CONFIGURE_IFACE and CONFIGURE_NAT44 from
     /etc/default/tayga are now respected.
+
+    This may cause issues if you have custom firewall rules or configured
+    the tayga nat64 interface yourself. You may inhibit this behaviour by
+    setting the options to "no".
 
  -- Daniel Gröber <dxld@darkboxed.org>  Sun, 16 Nov 2025 10:25:24 +0100
