@@ -1,7 +1,4 @@
-# watch control file for uscan
-# See uscan(1) for format
-
+# watch control file for uscan - See uscan(1) for format
 version=4
-
-http://www.litech.org/tayga/tayga-(.*)\.tar\.bz2
+https://github.com/apalrd/tayga/tags .*/(\d.*)@ARCHIVE_EXT@
 
