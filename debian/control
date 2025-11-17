@@ -7,6 +7,7 @@ Uploaders:
  Daniel Gröber <dxld@darkboxed.org>,
 Build-Depends:
  debhelper-compat (= 13),
+ dh-exec,
  pkgconf,
  systemd-dev,
 Standards-Version: 4.7.2
