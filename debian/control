@@ -17,11 +17,12 @@ Rules-Requires-Root: no
 Description: Simple, no-fuss userspace IPv6-IPv4 translator
  TAYGA is a userspace IP/ICMP translator implemented using a virtual (TUN)
  device. It can be configured to act as a stateless IP/ICMP translator
- (SIIT, RFC 6145) with Explicit Address Mapping (EAM, RFC 7757) or a
- stateful NAT64 (RFC 6146).
+ (SIIT, RFC 6145) with Explicit Address Mapping (EAM, RFC 7757) and even a
+ stateful NAT64 (RFC 6146) with help from Linux kernel NAT44 (iptables).
  .
  As such it's useful as part of a 464XLAT (RFC 6146), IPv6-only or
- IPv6-mostly network architecture.
+ IPv6-mostly network architecture to establish IP-layer connectivity
+ between IPv4-only and/or IPv6-only hosts.
 
 Package: tayga-core
 Architecture: linux-any
