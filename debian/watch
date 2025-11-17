@@ -1,7 +1,7 @@
 # watch control file for uscan
 # See uscan(1) for format
 
-version=3
+version=4
 
 http://www.litech.org/tayga/tayga-(.*)\.tar\.bz2
 
