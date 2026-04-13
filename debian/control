@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Debian Networking Team <team+networking@tracker.debian.org>
 Uploaders:
  Andrej Shadura <andrewsh@debian.org>,
- Daniel Gröber <dxld@darkboxed.org>,
+ Daniel Gröber <dxld@debian.org>,
 Build-Depends:
  debhelper-compat (= 13),
  dh-exec,
