@@ -27,6 +27,8 @@ Description: Simple, no-fuss userspace IPv6-IPv4 translator
 
 Package: tayga-core
 Architecture: linux-any
+Breaks: tayga (<< 0.9.2-11)
+Replaces: tayga (<< 0.9.2-11)
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
