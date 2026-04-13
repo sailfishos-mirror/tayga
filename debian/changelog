@@ -1,3 +1,11 @@
+tayga (0.9.2-12) unstable; urgency=medium
+
+  * d/watch: Switch to Andrew apalrd's TAYGA fork
+  * gbp.conf: Fix upstream-tag syntax
+  * Fix missing Breaks+Replaces in tayga-code (Closes: #1133201)
+
+ -- Daniel Gröber <dxld@debian.org>  Mon, 13 Apr 2026 17:48:59 +0200
+
 tayga (0.9.2-11) unstable; urgency=medium
 
   [ Daniel Gröber ]
