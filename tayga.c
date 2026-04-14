@@ -1,8 +1,9 @@
 /*
  *  tayga.c -- main server code
  *
- *  part of TAYGA <http://www.litech.org/tayga/>
+ *  part of TAYGA <https://github.com/apalrd/tayga>
  *  Copyright (C) 2010  Nathan Lutchansky <lutchann@litech.org>
+ *  Copyright (C) 2025  Andrew Palardy <andrew@apalrd.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,7 +16,8 @@
  *  GNU General Public License for more details.
  */
 
-#include <tayga.h>
+#include "tayga.h"
+#include "version.h"
 
 #include <stdarg.h>
 #include <signal.h>
@@ -23,33 +25,47 @@
 #include <pwd.h>
 #include <grp.h>
 
-#define USAGE_TEXT	\
-"Usage: %s [-c|--config CONFIGFILE] [-d] [-n|--nodetach] [-u|--user USERID]\n" \
-"             [-g|--group GROUPID] [-r|--chroot] [-p|--pidfile PIDFILE]\n\n" \
-"--config FILE      : Read configuration options from FILE\n" \
-"-d                 : Enable debug messages (implies --nodetach)\n" \
-"--nodetach         : Do not detach from terminal\n" \
-"--user USERID      : Set uid to USERID after initialization\n" \
-"--group GROUPID    : Set gid to GROUPID after initialization\n" \
-"--chroot           : chroot() to data-dir (specified in config file)\n\n" \
-"--pidfile FILE     : Write process ID of daemon to FILE\n"
-
 extern struct config *gcfg;
 time_t now;
-
+static const char *progname;
+static const char *progname;
 static int signalfds[2];
-static int use_stdout;
 
-void slog(int priority, const char *format, ...)
-{
+void usage(int code) {
+	fprintf(stderr,
+			"TAYGA version %s\n"
+			"Usage:\n"
+			"%s [-c|--config CONFIGFILE] [-d|--debug] [-n|--nodetach]\n"
+			"       [-u|--user USERID] [-g|--group GROUPID] [-r|--chroot] [-p|--pidfile PIDFILE]\n"
+			"       [--syslog|--stdout|--journal]\n"
+			"%s --mktun [-c|--config CONFIGFILE]\n"
+			"%s --rmtun [-c|--config CONFIGFILE]\n"
+			"       [-u|--user USERID] [-g|--group GROUPID] [-r|--chroot] [-p|--pidfile PIDFILE]\n\n"
+			"--config FILE      : Read configuration options from FILE\n"
+			"--debug, -d        : Enable debug messages (implies --nodetach and --stdout)\n"
+			"--nodetach         : Do not fork the process\n"
+			"--syslog           : Log messages to syslog (default)\n"
+			"--stdout           : Log messages to stdout\n"
+			"--journal          : Log messages to the systemd journal\n"
+			"--user USERID      : Set uid to USERID after initialization\n"
+			"--group GROUPID    : Set gid to GROUPID after initialization\n"
+			"--chroot           : chroot() to data-dir (specified in config file)\n"
+			"--pidfile FILE     : Write process ID of daemon to FILE\n"
+			"--mktun            : Create the persistent TUN interface\n"
+			"--rmtun            : Remove the persistent TUN interface\n"
+			"--help, -h         : Show this help message\n",
+		TAYGA_VERSION, progname, progname, progname);
+	exit(code);
+}
+
+/* Used during argument parsing, before logging is setup */
+void die(const char *format, ...) {
 	va_list ap;
-
 	va_start(ap, format);
-	if (use_stdout)
-		vprintf(format, ap);
-	else if (priority != LOG_DEBUG)
-		vsyslog(priority, format, ap);
+	vfprintf(stderr, format, ap);
 	va_end(ap);
+	putc('\n', stderr);
+	exit(1);
 }
 
 static void set_nonblock(int fd)
@@ -68,22 +84,7 @@ static void set_nonblock(int fd)
 	}
 }
 
-void read_random_bytes(void *d, int len)
-{
-	int ret;
-
-	ret = read(gcfg->urandom_fd, d, len);
-	if (ret < 0) {
-		slog(LOG_CRIT, "read /dev/urandom returned %s\n",
-				strerror(errno));
-		exit(1);
-	}
-	if (ret < len) {
-		slog(LOG_CRIT, "read /dev/urandom returned EOF\n");
-		exit(1);
-	}
-}
-
+#ifdef __linux__
 static void tun_setup(int do_mktun, int do_rmtun)
 {
 	struct ifreq ifr;
@@ -147,6 +148,120 @@ static void tun_setup(int do_mktun, int do_rmtun)
 				strerror(errno));
 		exit(1);
 	}
+
+	/* Query MTU from tun adapter */
+	memset(&ifr, 0, sizeof(ifr));
+	strcpy(ifr.ifr_name, gcfg->tundev);
+	if (ioctl(fd, SIOCGIFMTU, &ifr) < 0) {
+		slog(LOG_CRIT, "Unable to query MTU, aborting: %s\n",
+				strerror(errno));
+		exit(1);
+	}
+	close(fd);
+
+	/* MTU is less than 1280, not allowed */
+	gcfg->mtu = ifr.ifr_mtu;
+	if(gcfg->mtu < MTU_MIN) {
+		slog(LOG_CRIT, "MTU of %d is too small, must be at least %d\n",
+				gcfg->mtu, MTU_MIN);
+		exit(1);
+	}
+
+	slog(LOG_INFO, "Using tun device %s with MTU %d\n", gcfg->tundev,
+			gcfg->mtu);
+}
+#endif
+
+#ifdef __FreeBSD__
+static void tun_setup(int do_mktun, int do_rmtun)
+{
+	struct ifreq ifr;
+	int fd, do_rename = 0, multi_af;
+	char devname[64];
+
+	if (strncmp(gcfg->tundev, "tun", 3))
+		do_rename = 1;
+
+	if ((do_mktun || do_rmtun) && do_rename)
+	{
+		slog(LOG_CRIT,
+			"tunnel interface name needs to match tun[0-9]+ pattern "
+				"for --mktun to work\n");
+		exit(1);
+	}
+
+	snprintf(devname, sizeof(devname), "/dev/%s", do_rename ? "tun" : gcfg->tundev);
+
+	gcfg->tun_fd = open(devname, O_RDWR);
+	if (gcfg->tun_fd < 0) {
+		slog(LOG_CRIT, "Unable to open %s, aborting: %s\n",
+				devname, strerror(errno));
+		exit(1);
+	}
+
+	if (do_mktun) {
+		slog(LOG_NOTICE, "Created persistent tun device %s\n",
+				gcfg->tundev);
+		return;
+	} else if (do_rmtun) {
+
+		/* Close socket before removal */
+		close(gcfg->tun_fd);
+
+		fd = socket(PF_INET, SOCK_DGRAM, 0);
+		if (fd < 0) {
+			slog(LOG_CRIT, "Unable to create control socket, aborting: %s\n",
+					strerror(errno));
+			exit(1);
+		}
+
+		memset(&ifr, 0, sizeof(ifr));
+		strcpy(ifr.ifr_name, gcfg->tundev);
+		if (ioctl(fd, SIOCIFDESTROY, &ifr) < 0) {
+			slog(LOG_CRIT, "Unable to destroy interface %s, aborting: %s\n",
+					gcfg->tundev, strerror(errno));
+			exit(1);
+		}
+
+		close(fd);
+
+		slog(LOG_NOTICE, "Removed persistent tun device %s\n",
+				gcfg->tundev);
+		return;
+	}
+
+	/* Set multi-AF mode */
+	multi_af = 1;
+	if (ioctl(gcfg->tun_fd, TUNSIFHEAD, &multi_af) < 0) {
+			slog(LOG_CRIT, "Unable to set multi-AF on %s, "
+					"aborting: %s\n", gcfg->tundev,
+					strerror(errno));
+			exit(1);
+	}
+
+	slog(LOG_CRIT, "Multi-AF mode set on %s\n", gcfg->tundev);
+
+	set_nonblock(gcfg->tun_fd);
+
+	fd = socket(PF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		slog(LOG_CRIT, "Unable to create socket, aborting: %s\n",
+				strerror(errno));
+		exit(1);
+	}
+
+	if (do_rename) {
+		memset(&ifr, 0, sizeof(ifr));
+		strcpy(ifr.ifr_name, fdevname(gcfg->tun_fd));
+		ifr.ifr_data = gcfg->tundev;
+		if (ioctl(fd, SIOCSIFNAME, &ifr) < 0) {
+			slog(LOG_CRIT, "Unable to rename interface %s to %s, aborting: %s\n",
+					fdevname(gcfg->tun_fd), gcfg->tundev,
+					strerror(errno));
+			exit(1);
+		}
+	}
+
 	memset(&ifr, 0, sizeof(ifr));
 	strcpy(ifr.ifr_name, gcfg->tundev);
 	if (ioctl(fd, SIOCGIFMTU, &ifr) < 0) {
@@ -161,10 +276,11 @@ static void tun_setup(int do_mktun, int do_rmtun)
 	slog(LOG_INFO, "Using tun device %s with MTU %d\n", gcfg->tundev,
 			gcfg->mtu);
 }
+#endif
 
 static void signal_handler(int signal)
 {
-	write(signalfds[1], &signal, sizeof(signal));
+	(void)!write(signalfds[1], &signal, sizeof(signal));
 }
 
 static void signal_setup(void)
@@ -202,19 +318,19 @@ static void read_from_tun(void)
 				"device: %s\n", strerror(errno));
 		return;
 	}
-	if (ret < sizeof(struct tun_pi)) {
+	if ((size_t)ret < sizeof(struct tun_pi)) {
 		slog(LOG_WARNING, "short read from tun device "
 				"(%d bytes)\n", ret);
 		return;
 	}
-	if (ret == gcfg->recv_buf_size) {
+	if ((uint32_t)ret == gcfg->recv_buf_size) {
 		slog(LOG_WARNING, "dropping oversized packet\n");
 		return;
 	}
 	memset(p, 0, sizeof(struct pkt));
 	p->data = gcfg->recv_buf + sizeof(struct tun_pi);
 	p->data_len = ret - sizeof(struct tun_pi);
-	switch (ntohs(pi->proto)) {
+	switch (TUN_GET_PROTO(pi)) {
 	case ETH_P_IP:
 		handle_ip4(p);
 		break;
@@ -247,8 +363,74 @@ static void read_from_signalfd(void)
 		}
 		if (gcfg->dynamic_pool)
 			dynamic_maint(gcfg->dynamic_pool, 1);
-		slog(LOG_NOTICE, "exiting on signal %d\n", sig);
+		slog(LOG_NOTICE, "Exiting on signal %d\n", sig);
 		exit(0);
+	}
+}
+
+static void print_op_info(void)
+{
+	struct list_head *entry;
+	struct map4 *s4;
+	struct map6 *s6;
+	struct map6 *m6;
+	char addrbuf[64],addrbuf2[64];
+
+	inet_ntop(AF_INET, &gcfg->local_addr4, addrbuf, sizeof(addrbuf));
+	slog(LOG_INFO, "TAYGA's IPv4 address: %s\n", addrbuf);
+	inet_ntop(AF_INET6, &gcfg->local_addr6, addrbuf, sizeof(addrbuf));
+	slog(LOG_INFO, "TAYGA's IPv6 address: %s\n", addrbuf);
+	m6 = list_entry(gcfg->map6_list.prev, struct map6, list);
+	if (m6->type == MAP_TYPE_RFC6052) {
+		inet_ntop(AF_INET6, &m6->addr, addrbuf, sizeof(addrbuf));
+		slog(LOG_INFO, "NAT64 prefix: %s/%d\n",
+				addrbuf, m6->prefix_len);
+		if (m6->addr.s6_addr32[0] == WKPF
+			&& !m6->addr.s6_addr32[1]
+			&& !m6->addr.s6_addr32[2]
+			&& gcfg->wkpf_strict)
+			slog(LOG_NOTICE, "Note: traffic between IPv6 hosts and "
+					"private IPv4 addresses (i.e. to/from "
+					"64:ff9b::10.0.0.0/104, "
+					"64:ff9b::192.168.0.0/112, etc) "
+					"will be dropped.  Use a translation "
+					"prefix within your organization's "
+					"IPv6 address space instead of "
+					"64:ff9b::/96 if you need your "
+					"IPv6 hosts to communicate with "
+					"private IPv4 addresses.\n");
+	}
+	if (gcfg->dynamic_pool) {
+		inet_ntop(AF_INET, &gcfg->dynamic_pool->map4.addr,
+				addrbuf, sizeof(addrbuf));
+		slog(LOG_INFO, "Dynamic pool: %s/%d\n", addrbuf,
+				gcfg->dynamic_pool->map4.prefix_len);
+		if (gcfg->data_dir[0])
+			load_dynamic(gcfg->dynamic_pool);
+		else
+			slog(LOG_NOTICE, "Note: dynamically-assigned mappings "
+					"will not be saved across restarts.  "
+					"Specify data-dir in config if you would "
+					"like dynamic mappings to be "
+					"persistent.\n");
+	}
+
+	slog(LOG_DEBUG,"Map4 List:\n");
+	list_for_each(entry, &gcfg->map4_list) {
+		s4 = list_entry(entry, struct map4, list);
+
+		slog(LOG_DEBUG,"Entry %s/%d type %d mask %s\n",
+			inet_ntop(AF_INET,&s4->addr,addrbuf,64),
+			s4->prefix_len,s4->type,
+			inet_ntop(AF_INET,&s4->mask,addrbuf2,64));
+	}
+	slog(LOG_DEBUG,"Map6 List:\n");
+	list_for_each(entry, &gcfg->map6_list) {
+		s6 = list_entry(entry, struct map6, list);
+
+		slog(LOG_DEBUG,"Entry %s/%d type %d\n",
+			inet_ntop(AF_INET6,&s6->addr,addrbuf,64),
+			s6->prefix_len,s6->type);
 	}
 }
 
@@ -257,7 +439,6 @@ int main(int argc, char **argv)
 	int c, ret, longind;
 	int pidfd;
 	struct pollfd pollfds[2];
-	struct map6 *m6;
 	char addrbuf[INET6_ADDRSTRLEN];
 
 	char *conffile = TAYGA_CONF_PATH;
@@ -270,50 +451,73 @@ int main(int argc, char **argv)
 	int do_rmtun = 0;
 	struct passwd *pw = NULL;
 	struct group *gr = NULL;
+	progname = argv[0];
+
+	/* Init config structure */
+	if(config_init() < 0) return 1;
 
 	static struct option longopts[] = {
 		{ "mktun", 0, 0, 0 },
 		{ "rmtun", 0, 0, 0 },
-		{ "help", 0, 0, 0 },
+		{ "syslog", 0, 0, 0 },
+		{ "stdout", 0, 0, 0 },
+		{ "journal", 0, 0, 0 },
+		{ "help", 0, 0, 'h' },
+		{ "syslog", 0, 0, 0 },
+		{ "stdout", 0, 0, 0 },
+		{ "journal", 0, 0, 0 },
+		{ "help", 0, 0, 'h' },
 		{ "config", 1, 0, 'c' },
 		{ "nodetach", 0, 0, 'n' },
 		{ "user", 1, 0, 'u' },
 		{ "group", 1, 0, 'g' },
 		{ "chroot", 0, 0, 'r' },
 		{ "pidfile", 1, 0, 'p' },
+		{ "debug", 0, 0, 'd' },
+		{ "debug", 0, 0, 'd' },
 		{ 0, 0, 0, 0 }
 	};
 
+	/* Arg parsing loop */
 	for (;;) {
-		c = getopt_long(argc, argv, "c:dnu:g:rp:", longopts, &longind);
+		c = getopt_long(argc, argv, "c:dhnu:g:rp:", longopts, &longind);
+		/* Reached last argument, terminate loop */
 		if (c == -1)
 			break;
 		switch (c) {
 		case 0:
-			if (longind == 0) {
-				if (do_rmtun) {
-					fprintf(stderr, "Error: both --mktun "
-						"and --rmtun specified.\n");
-					exit(1);
-				}
-				do_mktun = 1;
-			} else if (longind == 1) {
-				if (do_mktun) {
-					fprintf(stderr, "Error: both --mktun "
-						"and --rmtun specified.\n");
-					exit(1);
-				}
-				do_rmtun = 1;
-			} else if (longind == 2) {
-				fprintf(stderr, USAGE_TEXT, argv[0]);
-				exit(0);
+			switch (longind) {
+				case 0: /* --mktun */
+					if (do_rmtun) {
+						die("Error: both --mktun and --rmtun specified");
+					}
+					do_mktun = 1;
+					break;
+				case 1: /* --rmtun */
+					if (do_mktun) {
+						die("Error: both --mktun and --rmtun specified");
+						exit(1);
+					}
+					do_rmtun = 1;
+					break;
+				case 2: /* --syslog */
+					gcfg->log_out = LOG_TO_SYSLOG;
+					break;
+				case 3: /* --stdout */
+					gcfg->log_out = LOG_TO_STDOUT;
+					break;
+				case 4: /* --journal */
+					gcfg->log_out = LOG_TO_JOURNAL;
+					break;
+				default:
+					usage(1);
 			}
 			break;
 		case 'c':
 			conffile = optarg;
 			break;
 		case 'd':
-			use_stdout = 1;
+			gcfg->log_out = LOG_TO_STDOUT;
 			detach = 0;
 			break;
 		case 'n':
@@ -331,38 +535,60 @@ int main(int argc, char **argv)
 		case 'p':
 			pidfile = optarg;
 			break;
+		case 'h':
+			usage(1);
+			break;
 		default:
-			fprintf(stderr, "Try `%s --help' for more "
-					"information.\n", argv[0]);
+			die("Try `%s --help' for more information (got %c)", argv[0],c);
 			exit(1);
 		}
 	}
 
+	/* Setup logging
+	 * But not if we are only doing mktun / rmtun
+	 * This must be done before config parsing, since those rely
+	 * on logging based on log_out
+	 */
+	if(do_mktun || do_rmtun) {
+		//Force stdout for these options
+		gcfg->log_out = LOG_TO_STDOUT;
+	} else if (gcfg->log_out == LOG_TO_SYSLOG) {
+		openlog("tayga", LOG_PID | LOG_NDELAY, LOG_DAEMON);
+	} else if (gcfg->log_out == LOG_TO_JOURNAL) {
+		int r = journal_init("tayga");
+		if (r < 0) {
+			fprintf(stderr,"Error: Unable to initialize journal: %s\n", strerror(-r));
+			return 1;
+		}
+	}
+
+	/* Parse config file options */
+	if(config_read(conffile) < 0) return 1;
+
+	/* Validate config */
+	if(config_validate() < 0) return 1;
+
+	/* Check if we are doing tunnel operations only
+	 * Must be done after config reading so we know tun name
+	 */
 	if (do_mktun || do_rmtun) {
-		use_stdout = 1;
 		if (user) {
-			fprintf(stderr, "Error: cannot specify -u or --user "
-					"with mktun/rmtun operation\n");
-			exit(1);
+			die("Error: cannot specify -u or --user "
+					"with mktun/rmtun operation");
 		}
 		if (group) {
-			fprintf(stderr, "Error: cannot specify -g or --group "
+			die("Error: cannot specify -g or --group "
 					"with mktun/rmtun operation\n");
-			exit(1);
 		}
 		if (do_chroot) {
-			fprintf(stderr, "Error: cannot specify -r or --chroot "
+			die("Error: cannot specify -r or --chroot "
 					"with mktun/rmtun operation\n");
-			exit(1);
 		}
-		read_config(conffile);
 		tun_setup(do_mktun, do_rmtun);
 		return 0;
 	}
 
-	if (!use_stdout)
-		openlog("tayga", LOG_PID | LOG_NDELAY, LOG_DAEMON);
-
+	/* Change user */
 	if (user) {
 		pw = getpwnam(user);
 		if (!pw) {
@@ -371,6 +597,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* Change group */
 	if (group) {
 		gr = getgrnam(group);
 		if (!gr) {
@@ -380,15 +607,18 @@ int main(int argc, char **argv)
 		}
 	}
 
-	read_config(conffile);
-
+	/* Chroot */
 	if (!gcfg->data_dir[0]) {
 		if (do_chroot) {
 			slog(LOG_CRIT, "Error: cannot chroot when no data-dir "
 					"is specified in %s\n", conffile);
 			exit(1);
 		}
-		chdir("/");
+		if (chdir("/")) {
+			slog(LOG_CRIT, "Error: unable to chdir to /, aborting: %s\n",
+					strerror(errno));
+			exit(1);
+		}
 	} else if (chdir(gcfg->data_dir) < 0) {
 		if (user || errno != ENOENT) {
 			slog(LOG_CRIT, "Error: unable to chdir to %s, "
@@ -418,7 +648,7 @@ int main(int argc, char **argv)
 	}
 
 	if (pidfile) {
-		pidfd = open(pidfile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		pidfd = open(pidfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (pidfd < 0) {
 			slog(LOG_CRIT, "Error, unable to open %s for "
 					"writing: %s\n", pidfile,
@@ -435,20 +665,36 @@ int main(int argc, char **argv)
 
 	if (pidfile) {
 		snprintf(addrbuf, sizeof(addrbuf), "%ld\n", (long)getpid());
-		write(pidfd, addrbuf, strlen(addrbuf));
+		if (write(pidfd, addrbuf, strlen(addrbuf)) != (ssize_t)strlen(addrbuf)) {
+			slog(LOG_CRIT, "Error, unable to write PID file.\n");
+			exit(1);
+		}
 		close(pidfd);
 	}
 
-	slog(LOG_INFO, "starting TAYGA " VERSION "\n");
+	slog(LOG_INFO, "Starting TAYGA " TAYGA_VERSION "\n");
+	slog(LOG_DEBUG, "Compiled from " TAYGA_BRANCH "\n");
+	slog(LOG_DEBUG, "Commit " TAYGA_COMMIT "\n");
 
 	if (gcfg->cache_size) {
-		gcfg->urandom_fd = open("/dev/urandom", O_RDONLY);
-		if (gcfg->urandom_fd < 0) {
+		int urandom_fd = open("/dev/urandom", O_RDONLY);
+		if (urandom_fd < 0) {
 			slog(LOG_CRIT, "Unable to open /dev/urandom, "
 					"aborting: %s\n", strerror(errno));
 			exit(1);
+		}		
+		int len = 8 * sizeof(uint32_t);
+		int ret = read(urandom_fd, gcfg->rand, len);
+		if (ret < 0) {
+			slog(LOG_CRIT, "read /dev/urandom returned %s\n",
+					strerror(errno));
+			exit(1);
 		}
-		read_random_bytes(gcfg->rand, 8 * sizeof(uint32_t));
+		if (ret < len) {
+			slog(LOG_CRIT, "read /dev/urandom returned EOF\n");
+			exit(1);
+		}
+
 		gcfg->rand[0] |= 1; /* need an odd number for IPv4 hash */
 	}
 
@@ -460,7 +706,11 @@ int main(int argc, char **argv)
 					gcfg->data_dir, strerror(errno));
 			exit(1);
 		}
-		chdir("/");
+		if (chdir("/")) {
+			slog(LOG_CRIT, "Error: unable to chdir to /, aborting: %s\n",
+					strerror(errno));
+			exit(1);
+		}
 	}
 
 	if (gr) {
@@ -484,41 +734,8 @@ int main(int argc, char **argv)
 
 	signal_setup();
 
-	inet_ntop(AF_INET, &gcfg->local_addr4, addrbuf, sizeof(addrbuf));
-	slog(LOG_INFO, "TAYGA's IPv4 address: %s\n", addrbuf);
-	inet_ntop(AF_INET6, &gcfg->local_addr6, addrbuf, sizeof(addrbuf));
-	slog(LOG_INFO, "TAYGA's IPv6 address: %s\n", addrbuf);
-	m6 = list_entry(gcfg->map6_list.prev, struct map6, list);
-	if (m6->type == MAP_TYPE_RFC6052) {
-		inet_ntop(AF_INET6, &m6->addr, addrbuf, sizeof(addrbuf));
-		slog(LOG_INFO, "NAT64 prefix: %s/%d\n",
-				addrbuf, m6->prefix_len);
-		if (m6->addr.s6_addr32[0] == WKPF)
-			slog(LOG_INFO, "Note: traffic between IPv6 hosts and "
-					"private IPv4 addresses (i.e. to/from "
-					"64:ff9b::10.0.0.0/104, "
-					"64:ff9b::192.168.0.0/112, etc) "
-					"will be dropped.  Use a translation "
-					"prefix within your organization's "
-					"IPv6 address space instead of "
-					"64:ff9b::/96 if you need your "
-					"IPv6 hosts to communicate with "
-					"private IPv4 addresses.\n");
-	}
-	if (gcfg->dynamic_pool) {
-		inet_ntop(AF_INET, &gcfg->dynamic_pool->map4.addr,
-				addrbuf, sizeof(addrbuf));
-		slog(LOG_INFO, "Dynamic pool: %s/%d\n", addrbuf,
-				gcfg->dynamic_pool->map4.prefix_len);
-		if (gcfg->data_dir[0])
-			load_dynamic(gcfg->dynamic_pool);
-		else
-			slog(LOG_INFO, "Note: dynamically-assigned mappings "
-					"will not be saved across restarts.  "
-					"Specify data-dir in %s if you would "
-					"like dynamic mappings to be "
-					"persistent.\n", conffile);
-	}
+	/* Print running information */
+	print_op_info();
 
 	if (gcfg->cache_size)
 		create_cache();
@@ -536,6 +753,16 @@ int main(int argc, char **argv)
 	pollfds[1].fd = gcfg->tun_fd;
 	pollfds[1].events = POLLIN;
 
+	/* Tell systemd logger we are ready */
+	if(gcfg->log_out == LOG_TO_JOURNAL) {
+		int r = notify("READY=1");
+		if (r < 0) {
+			slog(LOG_CRIT, "Failed to notify readiness to $NOTIFY_SOCKET: %s\n", strerror(-r));
+			exit(1);
+		}
+	}
+
+	/* Main loop */
 	for (;;) {
 		ret = poll(pollfds, 2, POOL_CHECK_INTERVAL * 1000);
 		if (ret < 0) {
@@ -564,5 +791,10 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (gcfg->log_out == LOG_TO_SYSLOG) {
+		closelog();
+	} else if (gcfg->log_out == LOG_TO_JOURNAL) {
+		journal_cleanup();
+	}
 	return 0;
 }

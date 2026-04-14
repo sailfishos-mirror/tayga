@@ -1,0 +1,30 @@
+[Unit]
+Description=Simple, no-fuss NAT64
+After=network.target
+
+[Service]
+# To set up an extra tayga service instance, create a new tayga config in
+# /etc/tayga/instancename.conf
+# /etc/tayga/instancename.conf
+# systemctl enable tayga@instancename.service
+Type=notify
+
+# Ensure sbin directories are searched for the tayga binary
+ExecSearchPath=/usr/local/sbin:/usr/sbin
+ExecStart=tayga --config /etc/tayga/%i.conf --journal --nodetach
+
+# Hardening options
+PrivateTmp=true
+StateDirectory=tayga
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target
