@@ -1,8 +1,9 @@
 /*
  *  dynamic.c -- dynamic address mapper
  *
- *  part of TAYGA <http://www.litech.org/tayga/>
+ *  part of TAYGA <https://github.com/apalrd/tayga>
  *  Copyright (C) 2010  Nathan Lutchansky <lutchann@litech.org>
+ *  Copyright (C) 2025  Andrew Palardy <andrew@apalrd.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,13 +16,12 @@
  *  GNU General Public License for more details.
  */
 
-#include <tayga.h>
+#include "tayga.h"
+#include <inttypes.h>
+#include <limits.h>
 
 #define MAP_FILE	"dynamic.map"
 #define TMP_MAP_FILE	"dynamic.map~~"
-
-extern struct config *gcfg;
-extern time_t now;
 
 static struct map_dynamic *alloc_map_dynamic(const struct in6_addr *addr6,
 		const struct in_addr *addr4, struct free_addr *f)
@@ -99,7 +99,10 @@ static void print_dyn_change(char *str, struct map_dynamic *d)
 
 	inet_ntop(AF_INET, &d->map4.addr, addrbuf4, sizeof(addrbuf4));
 	inet_ntop(AF_INET6, &d->map6.addr, addrbuf6, sizeof(addrbuf6));
-	slog(LOG_DEBUG, "%s pool address %s (%s)\n", str, addrbuf4, addrbuf6);
+	/* Log dynamic assignment changes */
+	if(gcfg->log_opts & LOG_OPT_DYN) {
+		slog(LOG_INFO, "DYN: [%s] [%s]->[%s]\n",str,addrbuf4, addrbuf6);
+	}
 }
 
 struct map6 *assign_dynamic(const struct in6_addr *addr6)
@@ -119,7 +122,7 @@ struct map6 *assign_dynamic(const struct in6_addr *addr6)
 	list_for_each(entry, &pool->dormant_list) {
 		d = list_entry(entry, struct map_dynamic, list);
 		if (IN6_ARE_ADDR_EQUAL(addr6, &d->map6.addr)) {
-			print_dyn_change("reactivated dormant", d);
+			print_dyn_change("reactivated", d);
 			goto activate;
 		}
 	}
@@ -152,7 +155,7 @@ struct map6 *assign_dynamic(const struct in6_addr *addr6)
 			d = alloc_map_dynamic(addr6, &addr4, f);
 			if (!d)
 				return NULL;
-			print_dyn_change("assigned new", d);
+			print_dyn_change("assigned", d);
 			gcfg->map_write_pending = 1;
 			goto activate;
 		}
@@ -163,7 +166,7 @@ struct map6 *assign_dynamic(const struct in6_addr *addr6)
 
 	d = list_entry(pool->dormant_list.prev, struct map_dynamic, list);
 	d->map6.addr = *addr6;
-	print_dyn_change("reassigned dormant", d);
+	print_dyn_change("reassigned", d);
 	gcfg->map_write_pending = 1;
 
 activate:
@@ -172,7 +175,7 @@ activate:
 }
 
 static void load_map(struct dynamic_pool *pool, const struct in6_addr *addr6,
-		const struct in_addr *addr4, long int last_use)
+		const struct in_addr *addr4, time_t last_use)
 {
 	struct list_head *entry;
 	struct free_addr *f;
@@ -239,7 +242,7 @@ void load_dynamic(struct dynamic_pool *pool)
 	char *s4, *s6, *stime, *end, *tokptr;
 	struct in_addr addr4;
 	struct in6_addr addr6;
-	long int last_use;
+	time_t last_use;
 	struct list_head *entry;
 	struct map_dynamic *d;
 	int count = 0;
@@ -273,7 +276,13 @@ void load_dynamic(struct dynamic_pool *pool)
 		if (!inet_pton(AF_INET, s4, &addr4) ||
 				!inet_pton(AF_INET6, s6, &addr6))
 			goto malformed;
+#if LONG_MAX == INT64_MAX
 		last_use = strtol(stime, &end, 10);
+#elif LLONG_MAX == INT64_MAX
+		last_use = strtoll(stime, &end, 10);
+#else
+#  error Either long or long long must be 64 bits
+#endif
 		if (last_use <= 0 || *end)
 			goto malformed;
 		load_map(pool, &addr6, &addr4, last_use);
@@ -290,13 +299,14 @@ malformed:
 		d = list_entry(entry, struct map_dynamic, list);
 		if (d->last_use > last_use)
 			last_use = d->last_use;
+		print_dyn_change("loaded",d);
 		++count;
 	}
 	slog(LOG_INFO, "Loaded %d dynamic %s from %s/%s\n", count,
 			count == 1 ? "map" : "maps",
 			gcfg->data_dir, MAP_FILE);
 	if (last_use > now) {
-		slog(LOG_DEBUG, "Note: maps in %s/%s are dated in the future\n",
+		slog(LOG_NOTICE, "Note: maps in %s/%s are dated in the future\n",
 				gcfg->data_dir, MAP_FILE);
 		list_for_each(entry, &pool->dormant_list) {
 			d = list_entry(entry, struct map_dynamic, list);
@@ -342,7 +352,7 @@ static void write_to_file(struct dynamic_pool *pool)
 		d = list_entry(entry, struct map_dynamic, list);
 		inet_ntop(AF_INET, &d->map4.addr, addrbuf4, sizeof(addrbuf4));
 		inet_ntop(AF_INET6, &d->map6.addr, addrbuf6, sizeof(addrbuf6));
-		fprintf(out, "%s\t%s\t%ld\n", addrbuf4, addrbuf6,
+		fprintf(out, "%s\t%s\t%" PRId64 "\n", addrbuf4, addrbuf6,
 				d->cache_entry ?
 					d->cache_entry->last_use : d->last_use);
 		entry = entry->next;
@@ -368,7 +378,7 @@ void dynamic_maint(struct dynamic_pool *pool, int shutdown)
 		if (d->cache_entry)
 			continue;
 		if (d->last_use + gcfg->dyn_min_lease < now) {
-			print_dyn_change("unmapped dormant", d);
+			print_dyn_change("dormant", d);
 			move_to_dormant(d, pool);
 		}
 	}

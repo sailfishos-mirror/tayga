@@ -1,0 +1,170 @@
+# Default compiler flags
+CC ?= gcc
+CFLAGS ?= -Wall -O2
+LDFLAGS ?= -flto=auto
+SOURCES := nat64.c addrmap.c dynamic.c tayga.c conffile.c log.c
+
+#Default installation paths (may be overridden by environment variables)
+prefix ?= /usr/local
+exec_prefix ?= $(prefix)
+sbindir ?= $(exec_prefix)/sbin
+datarootdir ?= $(prefix)/share
+mandir ?= $(datarootdir)/man
+man5dir ?= $(mandir)/man5
+man8dir ?= $(mandir)/man8
+sysconfdir ?= /etc
+servicedir ?= $(sysconfdir)/systemd/system
+DESTDIR ?=
+
+# External programs
+GIT ?= git
+INSTALL ?= install
+IP ?= ip
+SYSTEMCTL ?= /bin/systemctl
+
+INSTALL_DATA ?= $(INSTALL) -m 644
+INSTALL_PROGRAM ?= $(INSTALL)
+
+TAYGA_VERSION = $(shell $(GIT) describe --tags --dirty)
+TAYGA_BRANCH = $(shell $(GIT) describe --all --dirty)
+TAYGA_COMMIT = $(shell $(GIT) rev-parse HEAD)
+
+.PHONY: all
+all: tayga
+
+.PHONY: help
+help:
+	@echo 'Targets:'
+	@echo 'all             - Compile tayga (produces ./tayga)'
+	@echo 'static          - Compile tayga with static linkage (produces ./tayga)'
+	@echo 'test            - Run the test suite'
+	@echo 'integration     - Run integration tests. Requires root permissions'
+	@echo 'install         - Installs tayga and manpages'
+	@echo
+	@echo 'Installation Variables:'
+	@echo 'LIVE            - Install on a live system (daemon-reload)'
+	@echo 'WITH_SYSTEMD    - Install systemd scripts'
+	@echo 'WITH_OPENRC     - Install OpenRC scripts and example config'
+
+# Synthesize the version.h header from Git
+define VERSION_HEADER
+#ifndef __TAYGA_VERSION_H__
+#define __TAYGA_VERSION_H__
+
+#define TAYGA_VERSION "$(TAYGA_VERSION)"
+#define TAYGA_BRANCH  "$(TAYGA_BRANCH)"
+#define TAYGA_COMMIT  "$(TAYGA_COMMIT)"
+
+#endif /* #ifndef __TAYGA_VERSION_H__ */
+endef
+
+# Compile Tayga
+tayga: $(SOURCES)
+	$(if test $(GIT) && git rev-parse,$(file > version.h,$(VERSION_HEADER)))
+	$(CC) $(CFLAGS) -o tayga $(SOURCES) $(LDFLAGS) $(LDLIBS)
+
+# Compile Tayga (statically link)
+.PHONY: static
+static: LDFLAGS += -static
+static: tayga
+
+# Test suite compiles with -Werror to detect compiler warnings
+.PHONY: test
+test: unit_conffile
+	./unit_conffile
+
+# these are only valid for GCC
+TEST_CFLAGS := $(CFLAGS) -Werror -coverage -DCOVERAGE_TESTING
+ifeq ($(CC),gcc)
+TEST_CFLAGS += -coverage
+endif
+TEST_FILES := test/unit.c
+unit_conffile: $(TEST_FILES) test/unit_conffile.c conffile.c addrmap.c
+	$(CC) $(TEST_CFLAGS) -I. -o unit_conffile $(TEST_FILES) test/unit_conffile.c conffile.c addrmap.c $(LDFLAGS)
+
+.PHONY: integration
+integration: tayga
+	-$(IP) netns add tayga-test
+	$(IP) netns exec tayga-test python3 test/addressing.py
+	$(IP) netns exec tayga-test python3 test/mapping.py
+	$(IP) netns exec tayga-test python3 test/translate.py
+	$(IP) netns del tayga-test
+
+.PHONY: clean
+clean:
+	$(RM) tayga version.h tayga-nat64.tar tayga-clat.tar tayga.tar
+	$(RM) unit_conffile *.gcda *.gcno
+
+# Install tayga and man pages
+.PHONY: install
+install: $(TARGET)
+	-mkdir -p $(DESTDIR)$(sbindir) $(DESTDIR)$(man5dir) $(DESTDIR)$(man8dir)
+	$(INSTALL_PROGRAM) tayga $(DESTDIR)$(sbindir)/tayga
+	$(INSTALL_DATA) tayga.conf.5 $(DESTDIR)$(man5dir)
+	$(INSTALL_DATA) tayga.8 $(DESTDIR)$(man8dir)
+# Install systemd service file
+ifdef WITH_SYSTEMD
+	-mkdir -p $(DESTDIR)$(servicedir) $(DESTDIR)$(sysconfdir)/tayga
+	$(INSTALL_DATA) scripts/tayga@.service $(DESTDIR)$(servicedir)/tayga@.service
+	test -e $(DESTDIR)$(sysconfdir)/tayga/default.conf || $(INSTALL_DATA) tayga.conf.example $(DESTDIR)$(sysconfdir)/tayga/default.conf
+ifdef LIVE
+	if test -d "/run/systemd/system" && test -x "$(SYSTEMCTL)"; then $(SYSTEMCTL) daemon-reload; fi
+else
+	@echo "Run 'systemctl daemon-reload' to have systemd recognize the newly installed service"
+endif
+	@echo "Systemd service installed. To enable: systemctl enable tayga@default.service"
+endif
+# Install openrc init script
+ifdef WITH_OPENRC
+	@echo "Installing OpenRC unit and configurations"
+	-mkdir -p $(DESTDIR)$(sysconfdir)/init.d $(DESTDIR)$(sysconfdir)/conf.d
+	$(INSTALL_PROGRAM) scripts/tayga.initd $(DESTDIR)$(sysconfdir)/init.d/tayga
+	$(INSTALL_DATA) scripts/tayga.confd $(DESTDIR)$(sysconfdir)/conf.d/tayga
+	test -e $(DESTDIR)$(sysconfdir)/tayga.conf || $(INSTALL_DATA) tayga.conf.example $(DESTDIR)$(sysconfdir)/tayga.conf
+endif
+
+
+# Container images
+# As these are multi-arch containers,
+# the build env requires qemu-user-static
+# These are not listed in help as they are intended
+# only for use by the build github actions
+container: tayga-clat.tar tayga-nat64.tar tayga.tar
+.PHONY: container
+
+# Flags for Podman
+PODMAN_FLAGS := --cgroup-manager=cgroupfs
+ifdef CONT_ALL
+#Option to build for all platforms
+PODMAN_FLAGS += --all-platforms
+endif
+
+tayga.tar: scripts/launch.sh
+	$(RM) $@
+	podman manifest create tayga
+	podman build $(PODMAN_FLAGS) . --manifest tayga
+ifdef CONT_PUSH
+	podman manifest push --all tayga ghcr.io/apalrd/tayga:latest
+endif
+	podman save -o $@ tayga
+
+
+tayga-clat.tar: scripts/launch-clat.sh
+	$(RM) $@
+	podman manifest create tayga-clat
+	podman build $(PODMAN_FLAGS) . --manifest tayga-clat --target final-clat
+ifdef CONT_PUSH
+	podman manifest push --all tayga-clat ghcr.io/apalrd/tayga-clat:latest
+endif
+	podman save -o $@ tayga-clat
+	podman manifest rm tayga-clat
+
+tayga-nat64.tar: scripts/launch-nat64.sh
+	$(RM) $@
+	podman manifest create tayga-nat64
+	podman build $(PODMAN_FLAGS) . --manifest tayga-nat64 --target final-nat64
+ifdef CONT_PUSH
+	podman manifest push --all tayga-nat64 ghcr.io/apalrd/tayga-nat64:latest
+endif
+	podman save -o $@ tayga-nat64
+	podman manifest rm tayga-nat64

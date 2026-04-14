@@ -1,8 +1,9 @@
 /*
  *  tayga.h -- main header file
  *
- *  part of TAYGA <http://www.litech.org/tayga/>
+ *  part of TAYGA <https://github.com/apalrd/tayga>
  *  Copyright (C) 2010  Nathan Lutchansky <lutchann@litech.org>
+ *  Copyright (C) 2025  Andrew Palardy <andrew@apalrd.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,12 +15,17 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  */
+#ifndef __TAYGA_H__
+#define __TAYGA_H__
 
 #include <stdio.h>
+#include <assert.h>
+#include <stdalign.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -31,13 +37,53 @@
 #include <syslog.h>
 #include <errno.h>
 #include <time.h>
+#include <stdarg.h>
+#if defined(__linux__)
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #include <linux/if_ether.h>
-
+#elif defined(__FreeBSD__)
+#include <net/if.h>
+#include <net/if_tun.h>
+#include <netinet/if_ether.h>
+#include <net/ethernet.h>
+#include <sys/uio.h>
+#else
+#error "Could not find headers for platform"
+#endif
 #include "list.h"
-#include "config.h"
 
+#ifdef COVERAGE_TESTING
+//for coverage testing
+inline static void dummy()
+{
+	static volatile int temp;
+	temp++;
+}
+#else
+#define dummy()
+#endif
+
+
+#ifdef __linux__
+#define	TUN_SET_PROTO(_pi, _af)			{ (_pi)->flags = 0; (_pi)->proto = htons(_af); }
+#define	TUN_GET_PROTO(_pi)			ntohs((_pi)->proto)
+#endif
+
+#ifdef __FreeBSD__
+#define s6_addr8  __u6_addr.__u6_addr8
+#define s6_addr16 __u6_addr.__u6_addr16
+#define s6_addr32 __u6_addr.__u6_addr32
+
+struct tun_pi {
+	int	proto;
+};
+
+#define ETH_P_IP AF_INET
+#define	ETH_P_IPV6 AF_INET6
+#define	TUN_SET_PROTO(_pi, _af)			{ (_pi)->proto = htonl(_af); }
+#define	TUN_GET_PROTO(_pi)			ntohl((_pi)->proto)
+#endif
 
 /* Configuration knobs */
 
@@ -53,6 +99,11 @@
 /* Valid token delimiters in config file and dynamic map file */
 #define DELIM		" \t\r\n"
 
+/// Default configuration path
+#ifndef TAYGA_CONF_PATH
+#define TAYGA_CONF_PATH "/etc/tayga.conf"
+#endif
+
 
 /* Protocol structures */
 
@@ -67,7 +118,10 @@ struct ip4 {
 	uint16_t cksum;
 	struct in_addr src;
 	struct in_addr dest;
-} __attribute__ ((__packed__));
+};
+
+static_assert(alignof(struct ip4) <= 4,"Struct IP4 must be 4-byte aligned");
+static_assert(sizeof(struct ip4) == 20,"Struct IP4 must be 20 bytes long");
 
 #define IP4_F_DF	0x4000
 #define IP4_F_MF	0x2000
@@ -80,14 +134,20 @@ struct ip6 {
 	uint8_t hop_limit;
 	struct in6_addr src;
 	struct in6_addr dest;
-} __attribute__ ((__packed__));
+};
+
+static_assert(alignof(struct ip6) <= 4,"Struct IP6 must be 4-byte aligned");
+static_assert(sizeof(struct ip6) == 40,"Struct IP6 must be 40 bytes long");
 
 struct ip6_frag {
 	uint8_t next_header;
 	uint8_t reserved;
 	uint16_t offset_flags; /* 15-3: frag offset, 2-0: flags */
 	uint32_t ident;
-} __attribute__ ((__packed__));
+};
+
+static_assert(alignof(struct ip6_frag) <= 4,"Struct ip6_frag must be 4-byte aligned");
+static_assert(sizeof(struct ip6_frag) == 8,"Struct ip6_frag must be 8 bytes long");
 
 #define IP6_F_MF	0x0001
 #define IP6_F_MASK	0xfff8
@@ -97,7 +157,10 @@ struct icmp {
 	uint8_t code;
 	uint16_t cksum;
 	uint32_t word;
-} __attribute__ ((__packed__));
+};
+
+static_assert(alignof(struct icmp) <= 4,"Struct ICMP must be 4-byte aligned");
+static_assert(sizeof(struct icmp) == 8,"Struct ICMP must be 8 bytes long");
 
 #define	WKPF	(htonl(0x0064ff9b))
 
@@ -106,11 +169,15 @@ struct icmp {
 
    (See http://www.ietf.org/mail-archive/web/behave/current/msg08499.html)
  */
-#define MTU_ADJ		20
+#define MTU_ADJ		20u
+
+/* Minimum MTU allowed by IPv6 */
+#define MTU_MIN 1280
 
 
 /* TAYGA data definitions */
 
+/// Packet structure
 struct pkt {
 	struct ip4 *ip4;
 	struct ip6 *ip6;
@@ -122,6 +189,11 @@ struct pkt {
 	uint32_t header_len; /* inc IP hdr for v4 but excl IP hdr for v6 */
 };
 
+// Ensure that the data field has enough alignment for ip4 and ip6 structs
+static_assert((offsetof(struct pkt, data) & (alignof(struct ip4) - 1)) == 0,"Packet data must be aligned for IP4");
+static_assert((offsetof(struct pkt, data) & (alignof(struct ip6) - 1)) == 0,"Packet data must be aligned for IP6");
+
+/// Type of mapping in mapping list
 enum {
 	MAP_TYPE_STATIC,
 	MAP_TYPE_RFC6052,
@@ -129,67 +201,87 @@ enum {
 	MAP_TYPE_DYNAMIC_HOST,
 };
 
+/// Mapping entry (IPv4)
 struct map4 {
 	struct in_addr addr;
 	struct in_addr mask;
 	int prefix_len;
 	int type;
-	struct list_head list;
+	struct list_head list; /* gcfg->map4_list */
 };
 
+/// Mapping entry (IPv6)
 struct map6 {
 	struct in6_addr addr;
 	struct in6_addr mask;
 	int prefix_len;
 	int type;
-	struct list_head list;
+	struct list_head list; /* gcfg->map6_list */
 };
 
+/// Mapping entry (Static Maps)
 struct map_static {
 	struct map4 map4;
 	struct map6 map6;
 	int conffile_lineno;
 };
 
+/// Free addresses
 struct free_addr {
 	uint32_t addr; /* in-use address (host order) */
 	uint32_t count; /* num of free addresses after addr */
-	struct list_head list;
+	struct list_head list; /* list of struct free_addr */
 };
 
+/// Mapping entry (Dynamic Map)
 struct map_dynamic {
 	struct map4 map4;
 	struct map6 map6;
 	struct cache_entry *cache_entry;
 	time_t last_use;
-	struct list_head list;
+	struct list_head list; /* referenced by struct dynamic_pool */
 	struct free_addr free;
 };
 
+static_assert(sizeof(time_t) == 8, "64-bit time_t is required");
+
+/// Mapping entry (Dynamic Pool)
 struct dynamic_pool {
 	struct map4 map4;
-	struct list_head mapped_list;
-	struct list_head dormant_list;
-	struct list_head free_list;
+	struct list_head mapped_list;  /* list of struct map_dynamic */
+	struct list_head dormant_list; /* list of struct map_dynamic */
+	struct list_head free_list;    /* list of struct free_addr */
 	struct free_addr free_head;
 };
 
+/// IP Cache entry
 struct cache_entry {
 	struct in6_addr addr6;
 	struct in_addr addr4;
 	time_t last_use;
 	uint32_t flags;
 	uint16_t ip4_ident;
-	struct list_head list;
-	struct list_head hash4;
-	struct list_head hash6;
+	struct list_head list;  /* gcfg->cache_active or gcfg->cache_pool */
+	struct list_head hash4; /* gcfg->hash_table4 */
+	struct list_head hash6; /* gcfg->hash_table6 */
 };
 
-#define CACHE_F_SEEN_4TO6	(1<<0)
-#define CACHE_F_SEEN_6TO4	(1<<1)
-#define CACHE_F_GEN_IDENT	(1<<2)
-#define CACHE_F_REP_AGEOUT	(1<<3)
+/// Cache flag bits
+enum {
+	CACHE_F_SEEN_4TO6	= (1<<0),
+	CACHE_F_SEEN_6TO4	= (1<<1),
+	CACHE_F_GEN_IDENT	= (1<<2),
+	CACHE_F_REP_AGEOUT	= (1<<3),
+};
 
+/// UDP Checksum options
+enum udp_cksum_mode {
+	UDP_CKSUM_DROP,
+	UDP_CKSUM_CALC,
+	UDP_CKSUM_FWD
+};
+
+/// Configuration structure
 struct config {
 	char tundev[IFNAMSIZ];
 	char data_dir[512];
@@ -204,11 +296,8 @@ struct config {
 	struct dynamic_pool *dynamic_pool;
 	int hash_bits;
 	int cache_size;
-	int allow_ident_gen;
-	int ipv6_offlink_mtu;
-	int lazy_frag_hdr;
+	uint32_t ipv6_offlink_mtu;
 
-	int urandom_fd;
 	int tun_fd;
 
 	uint16_t mtu;
@@ -224,12 +313,39 @@ struct config {
 	time_t last_dynamic_maint;
 	time_t last_map_write;
 	int map_write_pending;
+
+	int wkpf_strict;
+	int log_opts;
+	enum udp_cksum_mode udp_cksum_mode;	
+	enum {
+		LOG_TO_SYSLOG = 0,
+		LOG_TO_STDOUT = 1,
+		LOG_TO_JOURNAL = 2,
+	} log_out;
+};
+
+/// Logging flags
+enum {
+	LOG_OPT_REJECT = (1<<0),	//Packet was rejected
+	LOG_OPT_DROP   = (1<<1),	//Packet was dropped
+	LOG_OPT_ICMP   = (1<<2),	//Packet kicked back an ICMP for any reason
+	LOG_OPT_SELF   = (1<<3),	//Packet was destined to ourselves
+	LOG_OPT_DYN    = (1<<4),	//Events involving dynamic pool
+	LOG_OPT_CONFIG = (1<<15),	//Log has been configured (used in conf file validation)
+};
+
+/// Packet error codes
+enum {
+	ERROR_NONE = 0,
+	ERROR_REJECT = -1,
+	ERROR_DROP = -2,
+	ERROR_LOCAL = -3,
 };
 
 
 /* Macros and static functions */
 
-/* Get a pointer to the object containing x, which is of type "type" and 
+/* Get a pointer to the object containing x, which is of type "type" and
  * embeds x as a field called "field" */
 #define container_of(x, type, field) ({ \
 		const typeof( ((type *)0)->field ) *__mptr = (x); \
@@ -247,6 +363,8 @@ struct config {
 
 
 /* TAYGA function prototypes */
+extern struct config *gcfg;
+extern time_t now;
 
 /* addrmap.c */
 int validate_ip4_addr(const struct in_addr *a);
@@ -268,7 +386,9 @@ int map_ip6_to_ip4(struct in_addr *addr4, const struct in6_addr *addr6,
 void addrmap_maint(void);
 
 /* conffile.c */
-void read_config(char *conffile);
+int config_init(void);
+int config_read(char *conffile);
+int config_validate(void);
 
 /* dynamic.c */
 struct map6 *assign_dynamic(const struct in6_addr *addr6);
@@ -279,6 +399,17 @@ void dynamic_maint(struct dynamic_pool *pool, int shutdown);
 void handle_ip4(struct pkt *p);
 void handle_ip6(struct pkt *p);
 
-/* tayga.c */
-void slog(int priority, const char *format, ...);
-void read_random_bytes(void *d, int len);
+/* log.c */
+#define STRINGIFY_IMPL(x) #x
+#define STRINGIFY(x) STRINGIFY_IMPL(x)
+#define slog(prio, ...) slog_impl(prio, "CODE_FILE=" __FILE__, "CODE_LINE=" STRINGIFY(__LINE__), __func__, __VA_ARGS__)
+void slog_impl(int priority, const char *file, const char *line, const char *func, const char *format, ...);
+int notify(const char *msg);
+int journal_init(const char *progname);
+void journal_cleanup(void);
+int journal_printv_with_location(
+        int priority, const char *file, const char *line, const char *func,
+        const char *format, va_list ap);
+
+
+#endif /* #ifndef __TAYGA_H__ */
