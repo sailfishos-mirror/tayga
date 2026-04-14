@@ -1,14 +1,1 @@
-0001-use-var-spool.patch
-0002-manpage.patch
-0003-configure-no-CFLAGS.patch
-0004-quote-make-var.patch
-0005-guard-chdir.patch
-0006-guard-write.patch
-0007-static-EAM.patch
-0008-manpage-RFC.patch
-0009-systemd-service-file-for-tayga.patch
-0010-include-for-writev.patch
-0011-null-char.patch
-0012-rfc8125-local-prefix.patch
-0013-Fix-EAM-mapping-host-addressess.patch
-0014-Use-RFC8215-WKP-by-default.patch
+# 0014-Use-RFC8215-WKP-by-default.patch  # TODO: Still needed
