@@ -1,0 +1,22 @@
+From: "Andrew O. Shadura" <bugzilla@tut.by>
+Date: Wed, 15 Jun 2011 15:56:55 +0300
+Subject: use /var/spool
+
+Modify sample configuration file to use /var/spool/tayga instead of /var/db/tayga
+---
+ tayga.conf.example | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tayga.conf.example b/tayga.conf.example
+index e5603d7..99b23c1 100644
+--- a/tayga.conf.example
++++ b/tayga.conf.example
+@@ -84,7 +84,7 @@ dynamic-pool 192.168.255.0/24
+ #
+ # Optional.
+ #
+-data-dir /var/db/tayga
++data-dir /var/spool/tayga
+ 
+ #
+ # Establishes a single-host map.  If an IPv6 host should be consistently

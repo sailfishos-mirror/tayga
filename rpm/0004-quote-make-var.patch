@@ -1,0 +1,22 @@
+From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
+Date: Wed, 18 Apr 2012 09:09:11 +0100
+Subject: quote make var
+
+Quote filename containing variable modifiable at make time.
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 5640305..fa99305 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -5,7 +5,7 @@ AC_CONFIG_HEADERS(config.h)
+ 
+ AC_PROG_CC
+ 
+-tayga_conf_path=${sysconfdir}/tayga.conf
++tayga_conf_path='${sysconfdir}/tayga.conf'
+ 
+ AC_SUBST(tayga_conf_path)
+ 

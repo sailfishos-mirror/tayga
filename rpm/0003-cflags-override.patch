@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Suni <daniel.suni@jolla.com>
+Date: Thu, 23 Feb 2023 09:31:44 +0200
+Subject: [PATCH] CFLAGS patch for configure
+
+---
+ src/configure | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure b/configure
+index 0190ba4..6c614c4 100755
+--- a/configure
++++ b/configure
+@@ -3230,7 +3230,7 @@ fi
+ 
+ 
+ 
+-CFLAGS='-g -Wall'
++CFLAGS="$CFLAGS -g -Wall"
+ 
+ tayga_conf_path=${sysconfdir}/tayga.conf
+ 
